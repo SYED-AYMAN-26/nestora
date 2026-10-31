@@ -62,7 +62,7 @@ export default async function PaymentPage({ params }: { params: Promise<{ id: st
           <p><strong className="text-ink-dim">Refund conditions:</strong> The deposit is returned after the provider inspects the
           equipment on return. A deduction can only happen through a documented dispute decision by an admin — never
           automatically.</p>
-          <p className="mt-1"><strong className="text-ink-dim">Not escrow:</strong> RentLink 3D does not hold funds. A deposit
+          <p className="mt-1"><strong className="text-ink-dim">Not escrow:</strong> Nestora does not hold funds. A deposit
           row is a simulated record — no money is held by the platform or any third party.</p>
           {deposit && <p className="mt-1">Deposit record: <span className="text-ink-dim">{deposit.status.replace(/_/g, " ")}</span>{deposit.note ? ` — ${deposit.note}` : ""}</p>}
         </div>

@@ -8,7 +8,7 @@ import { VerificationForm } from "./VerificationForm";
 import { fmtDateTime } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Provider verification — RentLink 3D" };
+export const metadata = { title: "Provider verification" };
 
 export default async function VerificationPage() {
   const user = await getSessionUser();
@@ -103,7 +103,7 @@ export default async function VerificationPage() {
             </ul>
           </Card>
           <InfoNote tone="info" title="Honest labelling">
-            Registering as a college does not make you verified. RentLink shows the badge only after a human
+            Registering as a college does not make you verified. Nestora shows the badge only after a human
             administrator reviews the evidence — nothing here is automatic.
           </InfoNote>
           <p className="text-[11px] text-ink-faint">

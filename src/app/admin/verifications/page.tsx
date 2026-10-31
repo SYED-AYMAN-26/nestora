@@ -6,7 +6,7 @@ import { fmtDateTime } from "@/lib/format";
 import { VerificationReview } from "./VerificationReview";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Verification queue — RentLink 3D" };
+export const metadata = { title: "Verification queue" };
 
 export default async function AdminVerifications({ searchParams }: { searchParams: Promise<{ status?: string }> }) {
   const sp = await searchParams;

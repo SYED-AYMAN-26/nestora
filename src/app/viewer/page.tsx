@@ -4,7 +4,7 @@ import { ViewerGallery } from "./ViewerGallery";
 import { all } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "3D equipment viewer — RentLink 3D" };
+export const metadata = { title: "3D equipment viewer" };
 
 export default async function ViewerPage() {
   const withModels = await all<{ model_3d: string; title: string; id: number }>(

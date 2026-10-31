@@ -7,7 +7,7 @@ import { categoryName } from "@/lib/constants";
 import { money } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Resource utilisation — RentLink 3D" };
+export const metadata = { title: "Resource utilisation" };
 
 const CLASSIFICATION: Record<string, { label: string; tone: StatusTone }> = {
   frequently_used: { label: "Frequently used", tone: "success" },

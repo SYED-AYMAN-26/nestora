@@ -4,7 +4,7 @@ import { Card, PageHeader, Badge } from "@/components/ui";
 import { fmtDateTime } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Audit log — RentLink admin" };
+export const metadata = { title: "Audit log admin" };
 
 export default async function AuditPage({ searchParams }: { searchParams: Promise<{ entity?: string; action?: string }> }) {
   const sp = await searchParams;

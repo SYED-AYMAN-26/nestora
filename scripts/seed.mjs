@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * RentLink 3D demo seed.
+ * Nestora demo seed.
  * All providers, resources, bookings, reviews and verification records created
  * here are FICTIONAL demonstration data and are flagged is_demo = 1.
  * Demo password for every account: Demo@1234 by default, override with DEMO_PASSWORD.
@@ -170,8 +170,8 @@ function insertResource(providerId, r) {
 // ---------------------------------------------------------------- users
 const admin = insertUser({
   email: "admin@rentlink.demo", full_name: "Platform Administrator", phone: "+91 90000 00001",
-  account_type: "other_institution", org_name: "RentLink Platform", state: "Tamil Nadu", city: "Chennai",
-  role: "admin", active_mode: "provider", bio: "RentLink platform administrator (demo account).",
+  account_type: "other_institution", org_name: "Nestora Platform", state: "Tamil Nadu", city: "Chennai",
+  role: "admin", active_mode: "provider", bio: "Nestora platform administrator (demo account).",
 });
 
 const P = {};
@@ -449,7 +449,7 @@ R.cameraCreators = insertResource(P.creators.providerId, {
   quantity_total: 3, quantity_active: 1, internal_usage_hours_month: 25,
   location_city: "Chennai", location_state: "Tamil Nadu",
   price_hourly: 200, price_daily: 1100, price_weekly: 6000, deposit: 6000,
-  eligibility: "Photo ID required. Not yet verified by RentLink — expect additional identity checks.",
+  eligibility: "Photo ID required. Not yet verified by Nestora — expect additional identity checks.",
   usage_rules: "Card must be formatted by the hirer. No third-party sub-letting.",
   model_3d: "camera", capabilities: ["photo_capture", "video_capture", "low_light_capture"],
   best_for: "Portraits, events, low-light interiors",
@@ -515,7 +515,7 @@ R.cameraKumar = insertResource(P.kumar.providerId, {
   quantity_total: 1, quantity_active: 0, internal_usage_hours_month: 10,
   location_city: "Chennai", location_state: "Tamil Nadu",
   price_hourly: 170, price_daily: 950, price_weekly: 5000, deposit: 7000,
-  eligibility: "Government photo ID and a short call before confirming. This provider is not yet verified by RentLink.",
+  eligibility: "Government photo ID and a short call before confirming. This provider is not yet verified by Nestora.",
   usage_rules: "Meet at Besant Nagar for handover. Late returns charged at the daily rate.",
   model_3d: "camera", capabilities: ["photo_capture", "video_capture", "cinematic_video"],
   best_for: "Street photography, travel, small shoots",
@@ -795,7 +795,7 @@ db.prepare(
 ).run(admin, "admin@rentlink.demo", "seed.demo_data", "system", "seed", JSON.stringify({ resources: Object.keys(R).length, users: 11 }), ts(0));
 
 console.log("--------------------------------------------------------------");
-console.log("RentLink 3D demo database seeded");
+console.log("Nestora demo database seeded");
 console.log("  database :", dbPath);
 console.log("  users    :", db.prepare("SELECT COUNT(*) c FROM users").get().c);
 console.log("  providers:", db.prepare("SELECT COUNT(*) c FROM provider_profiles").get().c);

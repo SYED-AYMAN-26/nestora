@@ -6,7 +6,7 @@ import { AdminResourceActions } from "./AdminResourceActions";
 import { fmtDateTime } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Listings & reports — RentLink admin" };
+export const metadata = { title: "Listings & reports admin" };
 
 export default async function AdminResources({ searchParams }: { searchParams: Promise<{ status?: string }> }) {
   const sp = await searchParams;

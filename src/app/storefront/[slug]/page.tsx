@@ -12,7 +12,7 @@ export const dynamic = "force-dynamic";
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const p = await one<Row>(`SELECT display_name FROM provider_profiles WHERE storefront_slug = ?`, slug);
-  return { title: p ? `${p.display_name} — RentLink 3D storefront` : "Storefront — RentLink 3D" };
+  return { title: p ? `${p.display_name} storefront` : "Storefront" };
 }
 
 export default async function StorefrontPage({ params }: { params: Promise<{ slug: string }> }) {
@@ -82,7 +82,7 @@ export default async function StorefrontPage({ params }: { params: Promise<{ slu
             {p.verification_status !== "verified" && (
               <div className="mt-3">
                 <InfoNote tone="warn">
-                  This provider has not completed verification. RentLink shows the badge only after an administrator
+                  This provider has not completed verification. Nestora shows the badge only after an administrator
                   reviews identity and ownership evidence — treat an unverified listing with extra caution and inspect
                   the equipment at handover.
                 </InfoNote>

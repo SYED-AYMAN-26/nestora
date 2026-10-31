@@ -5,7 +5,7 @@ import { CAPABILITIES, CONDITIONS, categoryName } from "@/lib/constants";
 import { checkAvailability } from "@/lib/booking";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Compare providers — RentLink 3D" };
+export const metadata = { title: "Compare providers" };
 
 export default async function ComparePage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const sp = await searchParams;

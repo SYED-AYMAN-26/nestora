@@ -4,7 +4,7 @@ import { getSessionUser } from "@/lib/auth";
 import { RegisterForm } from "./RegisterForm";
 import { Card, DemoTag } from "@/components/ui";
 
-export const metadata = { title: "Create your account — RentLink 3D" };
+export const metadata = { title: "Create your account" };
 
 export default async function RegisterPage() {
   const user = await getSessionUser();

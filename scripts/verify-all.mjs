@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * RentLink 3D — the ONE command that verifies everything.
+ * Nestora — the ONE command that verifies everything.
  *
  *   npm run verify:full            # full run (starts/stops its own servers)
  *   npm run verify:full -- --fast  # skip the browser suites

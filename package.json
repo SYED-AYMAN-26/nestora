@@ -2,7 +2,7 @@
   "name": "rentlink-3d",
   "version": "1.0.0",
   "private": true,
-  "description": "RentLink 3D - list unused resources, discover what you need, share safely.",
+  "description": "Nestora - Discover Your Space. Experience It in 3D. List unused spaces and equipment, explore them in 3D, and book with verified providers.",
   "scripts": {
     "dev": "next dev -p 3000 -H 0.0.0.0",
     "build": "next build",

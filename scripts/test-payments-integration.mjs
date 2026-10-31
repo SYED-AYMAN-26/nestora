@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * RentLink 3D — payment INTEGRATION tests (real HTTP, real server, real DB).
+ * Nestora — payment INTEGRATION tests (real HTTP, real server, real DB).
  *
  * Any unexpected exception is caught and recorded as a FAIL so the suite always
  * prints a summary and always tears the test server down.
@@ -214,7 +214,7 @@ try {
   {
     const r = await req("/api/payments");
     check(r.json?.mode === "razorpay_test", "Mode is razorpay_test when keys exist", r.json?.mode);
-    check(r.json?.razorpayKeyId === "rzp_test_RentLinkPaymentTests", "Publishable key id is exposed (this one is safe to publish)");
+    check(r.json?.razorpayKeyId === "rzp_test_NestoraPaymentTests", "Publishable key id is exposed (this one is safe to publish)");
     const body = JSON.stringify(r.json);
     check(!body.includes(KEY_SECRET), "The gateway SECRET is never sent to the client");
     check(!body.includes(WEBHOOK_SECRET), "The webhook secret is never sent to the client");

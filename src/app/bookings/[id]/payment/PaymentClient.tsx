@@ -89,7 +89,7 @@ export function PaymentClient({
       order_id: created.data.order.id,
       amount: created.data.order.amount,
       currency: created.data.order.currency,
-      name: "RentLink 3D",
+      name: "Nestora",
       description: "Booking payment (TEST MODE)",
       theme: { color: "#38bdf8" },
       handler: async (response: RazorpayHandlerResponse) => {

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * RentLink 3D — end-to-end lifecycle test harness.
+ * Nestora — end-to-end lifecycle test harness.
  *
  * Runs against a LIVE server (default http://127.0.0.1:3000) using real HTTP
  * requests, real cookies and the real SQLite database. Nothing is mocked, so a
@@ -148,7 +148,8 @@ async function checkServer() {
   let r;
   try { r = await req("/"); } catch (e) { record(false, "Server reachable", String(e.cause?.code ?? e.message)); return false; }
   record(r.status === 200, "Landing page responds 200", `${r.text.length} bytes`);
-  record(/Canon EOS 90D|RentLink/.test(r.text), "Landing page renders seeded content");
+  record(/Nestora/.test(r.text), "Landing page renders the Nestora brand");
+  record(/Canon EOS 90D|Discover your space/i.test(r.text), "Landing page renders seeded content");
 
   // Tables + row counts straight from the database. The catalogue query differs
   // per engine, so pick it from the adapter's reported backend instead of
@@ -753,7 +754,7 @@ async function check3D() {
 
 /* ------------------------------------------------------------------- run */
 async function main() {
-  console.log(`\x1b[1mRentLink 3D — end-to-end verification\x1b[0m  ${BASE}\n`);
+  console.log(`\x1b[1mNestora — end-to-end verification\x1b[0m  ${BASE}\n`);
   if (process.argv.includes("--reset")) {
     // In-place reseed: `--reset` unlinks the database file, which a running server
     // keeps holding via an open handle (WAL), so the server and the harness would

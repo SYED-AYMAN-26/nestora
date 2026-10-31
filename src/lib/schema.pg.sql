@@ -1,4 +1,4 @@
--- RentLink 3D — relational schema (PostgreSQL)
+-- Nestora — relational schema (PostgreSQL)
 --
 -- GENERATED FILE — do not edit by hand. Source of truth is src/lib/schema.sql;
 -- regenerate with: node scripts/gen-pg-schema.mjs

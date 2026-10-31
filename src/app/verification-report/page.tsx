@@ -5,7 +5,7 @@ import { paymentModeLabel, razorpayConfigured } from "@/lib/payments";
 import { externalChannels } from "@/lib/audit";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Build verification report — RentLink 3D" };
+export const metadata = { title: "Build verification report" };
 
 type Status = "working" | "demo" | "optional" | "not_implemented";
 

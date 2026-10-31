@@ -21,7 +21,7 @@ import fs from "node:fs";
 
 export const SERVER_PORT = 3100;
 export const PROXY_PORT = 3101;
-export const KEY_ID = "rzp_test_RentLinkPaymentTests";
+export const KEY_ID = "rzp_test_NestoraPaymentTests";
 export const KEY_SECRET = "paytest_secret_0123456789abcdef";
 export const WEBHOOK_SECRET = "whsec_paytest_0123456789abcdef";
 

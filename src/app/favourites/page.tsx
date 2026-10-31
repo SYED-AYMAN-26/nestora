@@ -6,7 +6,7 @@ import { ResourceCard, type CardResource } from "@/components/ResourceCard";
 import { EmptyState, PageHeader } from "@/components/ui";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Favourites — RentLink 3D" };
+export const metadata = { title: "Favourites" };
 
 export default async function FavouritesPage() {
   const user = await getSessionUser();

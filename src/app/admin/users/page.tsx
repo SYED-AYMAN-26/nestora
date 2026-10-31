@@ -5,7 +5,7 @@ import { UserActions } from "./UserActions";
 import { fmtDate } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Users — RentLink admin" };
+export const metadata = { title: "Users admin" };
 
 export default async function AdminUsers({ searchParams }: { searchParams: Promise<{ q?: string; role?: string }> }) {
   const sp = await searchParams;

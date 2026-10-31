@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * RentLink 3D — payment unit + integration tests.
+ * Nestora — payment unit + integration tests.
  *
  *   node scripts/test-payments.mjs
  *

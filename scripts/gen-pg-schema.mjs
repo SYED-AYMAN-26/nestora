@@ -57,7 +57,7 @@ if (/(CREATE TABLE IF NOT EXISTS users \([\s\S]*?email TEXT NOT NULL UNIQUE)/.te
 // drop the SQLite file's own banner
 sql = sql.replace(/^--[^\n]*\n(--[^\n]*\n)*\n*/, "");
 
-const header = `-- RentLink 3D — relational schema (PostgreSQL)
+const header = `-- Nestora — relational schema (PostgreSQL)
 --
 -- GENERATED FILE — do not edit by hand. Source of truth is src/lib/schema.sql;
 -- regenerate with: node scripts/gen-pg-schema.mjs

@@ -71,7 +71,7 @@ export function TopNav({ user }: { user: NavUser }) {
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/img/logomark.svg" alt="" className="h-8 w-8" width={32} height={32} />
           <span className="text-[15px] font-semibold tracking-tight text-ink">
-            RentLink<span className="text-electric"> 3D</span>
+            Nestora
           </span>
         </Link>
 

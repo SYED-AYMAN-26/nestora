@@ -1,4 +1,4 @@
-# Deploying RentLink 3D
+# Deploying Nestora
 
 Two supported shapes:
 
@@ -10,6 +10,12 @@ Two supported shapes:
 Nothing about the local workflow changed. Production differs only in the two
 environment-driven swaps (`DATABASE_URL`, `BLOB_READ_WRITE_TOKEN`) plus a
 required `SESSION_SECRET`.
+
+> **Brand:** the user-facing product is **Nestora** — *Discover Your Space.
+> Experience It in 3D.* Renaming the brand did **not** rename any technical
+> identifier: the `rl_session` cookie, the `data/rentlink.db` development file,
+> the `RENTLINK_ALLOW_INSECURE_PROD` escape hatch, the `/api/*` routes, table
+> names and storage prefixes are all unchanged. Do not "fix" those.
 
 ---
 

@@ -133,7 +133,7 @@ export function ListingForm({ initial, mode }: { initial: ListingDraft; mode: "c
           </Field>
         </div>
         <p className="text-[11px] leading-relaxed text-ink-faint">
-          RentLink calculates utilisation from actual bookings. The figures above let us show <em>estimated</em> idle capacity —
+          Nestora calculates utilisation from actual bookings. The figures above let us show <em>estimated</em> idle capacity —
           which stays clearly labelled as an estimate until you confirm availability.
         </p>
       </section>

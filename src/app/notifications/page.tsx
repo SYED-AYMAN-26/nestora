@@ -8,7 +8,7 @@ import { fmtDateTime } from "@/lib/format";
 import { MarkAllRead } from "./MarkAllRead";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Notifications — RentLink 3D" };
+export const metadata = { title: "Notifications" };
 
 const KIND_LABEL: Record<string, string> = {
   booking_request: "Booking request",

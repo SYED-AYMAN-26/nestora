@@ -1,0 +1,13 @@
+{
+  "name": "Nestora",
+  "short_name": "Nestora",
+  "description": "Discover Your Space. Experience It in 3D.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#06121f",
+  "theme_color": "#06121f",
+  "icons": [
+    { "src": "/img/logomark.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
+  ]
+}

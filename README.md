@@ -1,11 +1,18 @@
-# RentLink 3D
+# Nestora
 
-A peer-to-peer **and** institutional resource-sharing marketplace: colleges, companies,
+**Discover Your Space. Experience It in 3D.**
+
+A property-tech and peer-to-peer **and** institutional resource-sharing marketplace: colleges, companies,
 community organisations and individuals list equipment and spaces they already own but
 aren't fully using, and other verified people rent them — with a full booking lifecycle,
 condition handover, deposits, disputes and impact analytics.
 
-Built with Next.js 15 (App Router) + TypeScript + Tailwind v4 + SQLite + three.js.
+Built with Next.js 15 (App Router) + TypeScript + Tailwind v4 + SQLite/PostgreSQL + three.js.
+
+> **Renamed from "RentLink 3D" to "Nestora".** Only the user-facing brand changed.
+> Technical identifiers — the `rl_session` cookie, `data/rentlink.db`, the
+> `RENTLINK_ALLOW_INSECURE_PROD` flag, `/api/*` routes, table names, storage
+> prefixes and migration filenames — are deliberately unchanged.
 
 > **Everything in the seed is fictional demonstration data** — providers, listings,
 > bookings, reviews and verification records are all flagged `is_demo = 1`. Impact

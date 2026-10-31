@@ -5,7 +5,7 @@ import { Badge, Card, InfoNote, PageHeader, Progress, Stat, money } from "@/comp
 import { ImpactFilters } from "./ImpactFilters";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Institutional impact — RentLink 3D" };
+export const metadata = { title: "Institutional impact" };
 
 export default async function ImpactPage({ searchParams }: { searchParams: Promise<{ from?: string; to?: string; category?: string }> }) {
   const sp = await searchParams;
@@ -103,7 +103,7 @@ export default async function ImpactPage({ searchParams }: { searchParams: Promi
         <h2 className="text-[14px] font-semibold text-ink">What we deliberately do not claim</h2>
         <ul className="mt-2 space-y-1 text-[12px] leading-relaxed text-ink-dim">
           <li>• We don&apos;t claim CO₂ savings or &ldquo;waste prevented&rdquo; — those need lifecycle data we don&apos;t collect.</li>
-          <li>• &ldquo;Money saved&rdquo; is what buyers were charged on RentLink, not an asserted market-price comparison.</li>
+          <li>• &ldquo;Money saved&rdquo; is what buyers were charged on Nestora, not an asserted market-price comparison.</li>
           <li>• Estimated idle units are potential capacity, not confirmed bookable availability.</li>
           <li>• With seeded demo records, none of this is a real-world impact claim.</li>
         </ul>

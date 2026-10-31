@@ -7,7 +7,7 @@ import { BOOKING_STATUS_LABEL } from "@/lib/constants";
 import { fmtDate } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Provider bookings — RentLink 3D" };
+export const metadata = { title: "Provider bookings" };
 
 const GROUPS = [
   { key: "pending", label: "Needs decision", statuses: ["pending", "counteroffered"] },

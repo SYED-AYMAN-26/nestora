@@ -34,6 +34,12 @@ export async function listAudit(limit = 200, filter?: { entity?: string; action?
 }
 
 // --- notification helpers -------------------------------------------------
+/**
+ * Outbound notification identity. Emails/queued messages carry the platform
+ * name so a recipient sees "Nestora" rather than a generic sender.
+ */
+export const NOTIFICATION_BRAND = "Nestora";
+
 export async function notify(userId: number, kind: string, title: string, body?: string, link?: string) {
   await run(
     `INSERT INTO notifications (user_id, kind, title, body, link) VALUES (?,?,?,?,?)`,
@@ -51,10 +57,10 @@ async function deliverExternal(userId: number, title: string) {
   // Real transports would be plugged in here. We deliberately do not pretend
   // delivery happened: the log records that a transport was configured.
   if (process.env.SMTP_HOST) {
-    console.log(`[notify:email:queued] ${user.email} :: ${title}`);
+    console.log(`[notify:email:queued] ${NOTIFICATION_BRAND} → ${user.email} :: ${title}`);
   }
   if (process.env.WHATSAPP_TOKEN && user.phone) {
-    console.log(`[notify:whatsapp:queued] ${user.phone} :: ${title}`);
+    console.log(`[notify:whatsapp:queued] ${NOTIFICATION_BRAND} → ${user.phone} :: ${title}`);
   }
 }
 

@@ -137,7 +137,7 @@ export async function recommend(opts: {
     }
     if (r.verification_status === "verified") {
       score += 10;
-      reasons.push("Provider identity verified by RentLink admin");
+      reasons.push("Provider identity verified by Nestora admin");
     } else {
       reasons.push("Provider not yet verified — expect extra checks at handover");
     }

@@ -105,7 +105,7 @@ export async function computeImpact(opts: { from?: string; to?: string; category
       money_saved_by_buyers_inr: Math.round(moneySaved),
       formula: {
         idle_hours_recovered: "completed rental days × 8 hours × units rented",
-        money_saved_by_buyers_inr: "sum of completed booking subtotals (what buyers were charged on RentLink)",
+        money_saved_by_buyers_inr: "sum of completed booking subtotals (what buyers were charged on Nestora)",
         idle_units_identified: "Σ max(total units − units in internal use) for listings not classified frequently used",
       },
     },

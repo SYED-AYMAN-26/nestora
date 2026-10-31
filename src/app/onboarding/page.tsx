@@ -4,7 +4,7 @@ import { getSessionUser } from "@/lib/auth";
 import { Card } from "@/components/ui";
 import { OnboardingSteps } from "./OnboardingSteps";
 
-export const metadata = { title: "Getting started — RentLink 3D" };
+export const metadata = { title: "Getting started" };
 
 export default async function OnboardingPage() {
   const user = await getSessionUser();

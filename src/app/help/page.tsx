@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Card, InfoNote, PageHeader, Badge } from "@/components/ui";
 
-export const metadata = { title: "Help & support — RentLink 3D" };
+export const metadata = { title: "Help & support" };
 
 const DEMO_LOGINS = [
   ["Buyer (college)", "buyer@student.demo", "Has a completed booking, an active rental, a paid booking awaiting handover and a pending extension."],
@@ -33,7 +33,7 @@ export default function HelpPage() {
     <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6">
       <PageHeader
         eyebrow="Help"
-        title="How RentLink 3D works"
+        title="How Nestora works"
         sub="A practical walkthrough of the lifecycle, the demo accounts, and exactly what is (and isn't) connected in this build."
       />
 

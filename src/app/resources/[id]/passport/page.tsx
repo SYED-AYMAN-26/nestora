@@ -79,7 +79,7 @@ export default async function PassportPage({ params }: { params: Promise<{ id: s
           <p className="mt-2 text-[11px] leading-relaxed text-ink-faint">
             {r.verification_status === "verified"
               ? "Provider identity and equipment authorisation were reviewed by an administrator."
-              : "Not verified. RentLink has not reviewed ownership evidence for this provider."}
+              : "Not verified. Nestora has not reviewed ownership evidence for this provider."}
           </p>
           <div className="mt-3 space-y-1 text-[12px]">
             <p className="text-ink-faint">Units tracked: <span className="text-ink">{r.quantity_total}</span></p>

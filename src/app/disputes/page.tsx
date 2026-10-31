@@ -7,7 +7,7 @@ import { DISPUTE_STATUS_LABEL } from "@/lib/constants";
 import { fmtDate } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Disputes — RentLink 3D" };
+export const metadata = { title: "Disputes" };
 
 export default async function DisputesPage() {
   const user = await getSessionUser();

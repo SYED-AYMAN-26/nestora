@@ -31,16 +31,16 @@ export default async function LandingPage() {
           <div className="fade-up">
             <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-electric/25 bg-electric/8 px-3 py-1 text-[11px] font-medium text-electric">
               <span className="h-1.5 w-1.5 rounded-full bg-electric" />
-              Resource-sharing infrastructure for institutions &amp; communities
+              Property-tech for institutions &amp; communities
             </div>
             <h1 className="text-4xl font-semibold leading-[1.06] tracking-tight sm:text-5xl lg:text-[56px]">
-              <span className="gradient-text">Unlock the equipment</span>
+              <span className="gradient-text">Discover your space.</span>
               <br />
-              <span className="text-ink">that already exists.</span>
+              <span className="text-ink">Experience it in 3D.</span>
             </h1>
             <p className="mt-5 max-w-xl text-[15px] leading-relaxed text-ink-dim">
-              Colleges, companies and community groups are sitting on cameras, lab kit, studios and halls that go
-              unused for most of the year. RentLink makes that capacity visible, bookable and accountable — with
+              Colleges, companies and community groups are sitting on halls, studios, labs and equipment that go
+              unused for most of the year. Nestora makes that space visible, explorable in 3D and bookable — with
               verified providers, condition records and a full rental lifecycle.
             </p>
             <div className="mt-7 flex flex-wrap items-center gap-3">
@@ -186,7 +186,7 @@ export default async function LandingPage() {
                   Find the 15 cameras nobody is using
                 </h2>
                 <p className="mt-2.5 text-sm leading-relaxed text-ink-dim">
-                  Providers declare how many units exist and how many are genuinely in internal use. RentLink
+                  Providers declare how many units exist and how many are genuinely in internal use. Nestora
                   computes utilisation from real booking records and surfaces what could be shared.
                 </p>
                 <ul className="mt-4 space-y-2 text-[13px] text-ink-dim">

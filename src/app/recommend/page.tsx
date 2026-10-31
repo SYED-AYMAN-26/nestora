@@ -3,7 +3,7 @@ import { RecommendClient } from "./RecommendClient";
 import { CAPABILITIES } from "@/lib/constants";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Find by need — RentLink 3D" };
+export const metadata = { title: "Find by need" };
 
 export default function RecommendPage() {
   const aiConfigured = Boolean(process.env.OPENAI_API_KEY);
@@ -12,7 +12,7 @@ export default function RecommendPage() {
       <PageHeader
         eyebrow="Capability matching"
         title="Describe what you need in plain language"
-        sub="RentLink matches on what equipment can do, not just what it's called. Ask for a way to record a short film and you'll see cameras, microphones, lighting, tripods and studios — with the reason each one matched."
+        sub="Nestora matches on what equipment can do, not just what it's called. Ask for a way to record a short film and you'll see cameras, microphones, lighting, tripods and studios — with the reason each one matched."
         right={<Badge tone={aiConfigured ? "verified" : "info"}>{aiConfigured ? "AI-assisted parsing configured" : "Rule-based engine"}</Badge>}
       />
 

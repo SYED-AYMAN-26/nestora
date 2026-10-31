@@ -1,4 +1,4 @@
--- RentLink 3D — relational schema (SQLite)
+-- Nestora — relational schema (SQLite)
 -- Every core domain object from the specification has a real table.
 
 PRAGMA journal_mode = WAL;

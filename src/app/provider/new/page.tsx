@@ -4,7 +4,7 @@ import { PageHeader, InfoNote } from "@/components/ui";
 import { ListingForm, type ListingDraft } from "@/components/ListingForm";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "New listing — RentLink 3D" };
+export const metadata = { title: "New listing" };
 
 export default async function NewListingPage() {
   const user = await getSessionUser();

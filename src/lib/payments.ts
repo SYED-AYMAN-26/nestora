@@ -69,7 +69,7 @@ export function paymentModeLabel() {
 
 /** Single source of truth for the wording shown anywhere a deposit is mentioned. */
 export function depositSafetyNote() {
-  return "Deposits in RentLink 3D are SIMULATED RECORDS, not escrow. No money is held by the platform or by any third party, and no deposit is ever moved automatically.";
+  return "Deposits in Nestora are SIMULATED RECORDS, not escrow. No money is held by the platform or by any third party, and no deposit is ever moved automatically.";
 }
 
 // ---------------------------------------------------------------- amounts

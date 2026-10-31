@@ -76,7 +76,7 @@ async function canvasStats(page) {
 }
 
 const main = async () => {
-  console.log(`\x1b[1mRentLink 3D — browser render verification\x1b[0m  ${BASE}\n`);
+  console.log(`\x1b[1mNestora — browser render verification\x1b[0m  ${BASE}\n`);
   const browser = await puppeteer.launch({
     headless: "shell",
     args: [

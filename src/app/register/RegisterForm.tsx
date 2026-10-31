@@ -60,7 +60,7 @@ export function RegisterForm() {
 
   return (
     <form onSubmit={submit} noValidate>
-      <h2 className="mb-4 text-lg font-semibold text-ink">Create your RentLink account</h2>
+      <h2 className="mb-4 text-lg font-semibold text-ink">Create your Nestora account</h2>
       {error && <Alert kind="error">{error}</Alert>}
 
       <Field label="Account type" required htmlFor="account_type" hint="This affects eligibility rules and which priority policies apply to you.">

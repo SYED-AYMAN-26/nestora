@@ -7,7 +7,7 @@ import { categoryName } from "@/lib/constants";
 import { ListingActions } from "./ListingActions";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "My listings — RentLink 3D" };
+export const metadata = { title: "My listings" };
 
 export default async function ProviderResources() {
   const user = await getSessionUser();

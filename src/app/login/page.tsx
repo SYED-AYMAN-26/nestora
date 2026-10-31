@@ -4,7 +4,7 @@ import { getSessionUser } from "@/lib/auth";
 import { LoginForm } from "./LoginForm";
 import { Card, DemoTag } from "@/components/ui";
 
-export const metadata = { title: "Sign in — RentLink 3D" };
+export const metadata = { title: "Sign in" };
 
 const DEMO_LOGINS = [
   { role: "Buyer (college student)", email: "buyer@student.demo", note: "Bookings, handover, return, disputes" },

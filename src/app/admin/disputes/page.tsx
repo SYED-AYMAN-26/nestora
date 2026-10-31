@@ -6,7 +6,7 @@ import { fmtDateTime } from "@/lib/format";
 import { DisputeDecision } from "./DisputeDecision";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Disputes — RentLink admin" };
+export const metadata = { title: "Disputes admin" };
 
 export default async function AdminDisputes({ searchParams }: { searchParams: Promise<{ status?: string }> }) {
   const sp = await searchParams;

@@ -13,7 +13,7 @@ type UserRow = {
 };
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Profile & settings — RentLink 3D" };
+export const metadata = { title: "Profile & settings" };
 
 export default async function SettingsPage() {
   const user = await getSessionUser();

@@ -8,7 +8,7 @@ import { BOOKING_STATUS_LABEL, VERIFICATION_LABEL } from "@/lib/constants";
 import { fmtDate } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Provider dashboard — RentLink 3D" };
+export const metadata = { title: "Provider dashboard" };
 
 export default async function ProviderHome() {
   const user = await getSessionUser();

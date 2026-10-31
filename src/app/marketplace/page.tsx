@@ -8,7 +8,7 @@ import { getSessionUser } from "@/lib/auth";
 import { all } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Marketplace — RentLink 3D" };
+export const metadata = { title: "Marketplace" };
 
 type SP = Record<string, string | string[] | undefined>;
 const str = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v);

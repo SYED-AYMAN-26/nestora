@@ -16,7 +16,7 @@ export const dynamic = "force-dynamic";
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const d = await resourceDetail(id);
-  return { title: d ? `${d.resource.title} — RentLink 3D` : "Resource — RentLink 3D" };
+  return { title: d ? d.resource.title : "Resource" };
 }
 
 export default async function ResourcePage({ params }: { params: Promise<{ id: string }> }) {
@@ -134,7 +134,7 @@ export default async function ResourcePage({ params }: { params: Promise<{ id: s
                   ))}
                 </div>
                 <p className="mt-1.5 text-[11px] text-ink-faint">
-                  Capability tags are how RentLink matches needs like &ldquo;record a short film&rdquo; to the right equipment — not just exact product names.
+                  Capability tags are how Nestora matches needs like &ldquo;record a short film&rdquo; to the right equipment — not just exact product names.
                 </p>
               </div>
             )}
@@ -272,7 +272,7 @@ export default async function ResourcePage({ params }: { params: Promise<{ id: s
               <div className="mt-2"><VerifiedBadge status={r.verification_status} /></div>
               <p className="mt-2 text-[11px] leading-relaxed text-ink-faint">
                 {r.verification_status === "verified"
-                  ? "Identity and ownership evidence were reviewed and approved by a RentLink administrator."
+                  ? "Identity and ownership evidence were reviewed and approved by a Nestora administrator."
                   : "This provider has not completed verification. Review details carefully at handover."}
               </p>
             </Card>

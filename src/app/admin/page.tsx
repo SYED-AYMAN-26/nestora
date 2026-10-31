@@ -7,7 +7,7 @@ import { fmtDateTime } from "@/lib/format";
 import { SweepButton } from "./SweepButton";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Admin overview — RentLink 3D" };
+export const metadata = { title: "Admin overview" };
 
 export default async function AdminHome() {
   const counts = {
