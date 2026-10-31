@@ -1,0 +1,12 @@
+[
+  { "slug": "cameras-photography", "name": "Cameras & Photography", "icon": "camera", "subcategories": ["DSLR Camera", "Mirrorless Camera", "Lenses", "Tripods & Gimbals", "Lighting", "Drone"] },
+  { "slug": "audio-visual", "name": "Audio & Video", "icon": "mic", "subcategories": ["Microphones", "Recorders", "Mixers", "Speakers", "Projectors"] },
+  { "slug": "computing", "name": "Computing & Laptops", "icon": "laptop", "subcategories": ["Laptop", "Desktop", "Monitor", "Tablet", "Networking"] },
+  { "slug": "robotics-electronics", "name": "Robotics & Electronics", "icon": "chip", "subcategories": ["Microcontroller Boards", "Sensors", "Robotics Kits", "Development Boards", "Power Supplies"] },
+  { "slug": "lab-equipment", "name": "Laboratory Equipment", "icon": "flask", "subcategories": ["Optics", "Spectrometry", "Microscopy", "Measurement", "Chemistry Glassware"] },
+  { "slug": "3d-printing", "name": "3D Printing & Fabrication", "icon": "printer", "subcategories": ["3D Printer", "Scanner", "Laser Cutter", "CNC"] },
+  { "slug": "spaces-rooms", "name": "Rooms, Studios & Halls", "icon": "door", "subcategories": ["Meeting Room", "Recording Studio", "Workshop", "Seminar Hall", "Event Space", "Lab Space"] },
+  { "slug": "event-equipment", "name": "Event & Presentation", "icon": "screen", "subcategories": ["Projector", "PA System", "Stage Lighting", "Screens", "Podium"] },
+  { "slug": "vehicles-transport", "name": "Vehicles & Transport", "icon": "truck", "subcategories": ["Van", "Minibus", "Utility Vehicle"] },
+  { "slug": "tools-workshop", "name": "Tools & Workshop", "icon": "wrench", "subcategories": ["Power Tools", "Hand Tools", "Welding", "Measuring Tools"] }
+]
