@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { guard, ok, fail, parseBody } from "@/lib/http";
 import { getSessionUser, ensureProviderProfile, slugify } from "@/lib/auth";
-import { one, run } from "@/lib/db";
+import { one, Row, run } from "@/lib/db";
 import { audit } from "@/lib/audit";
 
 const schema = z.object({
@@ -21,8 +21,10 @@ export const POST = guard(async (req: Request) => {
   const parsed = await parseBody(req, schema);
   if (!parsed.ok) return parsed.res;
   const d = parsed.data;
-  const row = await one(`SELECT * FROM users WHERE id = ?`, user.id)!;
+  const row = await one<Row>(`SELECT * FROM users WHERE id = ?`, user.id);
+  if (!row) return fail("Account not found", 404);
   const provider = await ensureProviderProfile(row, d.display_name.trim());
+  if (!provider) return fail("Could not create provider profile", 500);
   await run(
     `UPDATE provider_profiles SET org_type = ?, description = ?, contact_email = COALESCE(?, contact_email), contact_phone = COALESCE(?, contact_phone) WHERE id = ?`,
     d.org_type, d.description ?? null, d.contact_email ?? null, d.contact_phone ?? null, provider.id

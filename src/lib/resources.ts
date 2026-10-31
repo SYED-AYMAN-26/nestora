@@ -92,9 +92,9 @@ export async function resourceDetail(idOrSlug: string) {
       WHERE rv.resource_id = ? ORDER BY rv.created_at DESC LIMIT 20`, r.id
   );
   const maintenance = await all<Row>(`SELECT * FROM maintenance_records WHERE resource_id = ? ORDER BY start_date DESC LIMIT 20`, r.id);
-  const bookingsCount = await one<{ c: number }>(
+  const bookingsCount = (await one<{ c: number }>(
     `SELECT COUNT(*) AS c FROM bookings WHERE resource_id = ? AND status = 'completed'`, r.id
-  )?.c ?? 0;
+  ))?.c ?? 0;
   const availabilityBlocks = await all<Row>(
     `SELECT date, status, note FROM resource_availability WHERE resource_id = ? AND date >= date('now') ORDER BY date`, r.id
   );

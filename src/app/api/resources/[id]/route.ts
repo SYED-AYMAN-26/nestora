@@ -107,7 +107,7 @@ export const PATCH = guard(async (req: Request, ctx: { params: Promise<{ id: str
       : typeof x === "string" || typeof x === "number" || typeof x === "bigint" || typeof x === "boolean" ? x
       : typeof x === "object" && x instanceof Uint8Array ? x
       : JSON.stringify(x);
-  const assign = async (col: string, v: unknown, transform?: (x: unknown) => unknown) => {
+  const assign = (col: string, v: unknown, transform?: (x: unknown) => unknown) => {
     sets.push(`${col} = ?`);
     vals.push(asBind(transform ? transform(v) : v));
   };
@@ -161,11 +161,11 @@ export const DELETE = guard(async (req: Request, ctx: { params: Promise<{ id: st
   const existing = await ownedResource(Number(id), user);
   if (!existing) return fail("Resource not found in your storefront", 404);
 
-  const live = await one<{ c: number }>(
+  const live = (await one<{ c: number }>(
     `SELECT COUNT(*) AS c FROM bookings WHERE resource_id = ? AND status IN
       ('pending','approved','awaiting_payment','paid','ready_for_handover','active','return_requested','disputed')`,
     existing.id
-  )?.c ?? 0;
+  ))?.c ?? 0;
   if (Number(live) > 0) {
     // Soft-archive instead of destroying history.
     await run(`UPDATE resources SET status = 'archived', updated_at = ? WHERE id = ?`, new Date().toISOString(), existing.id);

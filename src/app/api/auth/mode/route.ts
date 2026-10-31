@@ -14,7 +14,8 @@ export const POST = guard(async (req: Request) => {
   if (!parsed.ok) return parsed.res;
 
   if (parsed.data.mode === "provider" && !user.provider) {
-    const row = await one(`SELECT * FROM users WHERE id = ?`, user.id)!;
+    const row = await one(`SELECT * FROM users WHERE id = ?`, user.id);
+    if (!row) return fail("Account not found", 404);
     await ensureProviderProfile(row, user.org_name || user.full_name);
     await audit({ actorId: user.id, actorEmail: user.email, action: "provider.profile_created", entity: "provider_profile", entityId: user.id });
   }

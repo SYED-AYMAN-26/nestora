@@ -22,7 +22,7 @@ export const GET = guard(async (req: Request) => {
     ? await all(`SELECT d.*, b.code, r.title AS resource_title, u.full_name AS raised_by_name
              FROM disputes d JOIN bookings b ON b.id = d.booking_id JOIN resources r ON r.id = b.resource_id
              JOIN users u ON u.id = d.raised_by ORDER BY d.created_at DESC LIMIT 200`)
-    : all(
+    : await all(
         `SELECT d.*, b.code, r.title AS resource_title, u.full_name AS raised_by_name
            FROM disputes d JOIN bookings b ON b.id = d.booking_id JOIN resources r ON r.id = b.resource_id
            JOIN users u ON u.id = d.raised_by

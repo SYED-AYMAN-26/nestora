@@ -23,9 +23,9 @@ export async function computeImpact(opts: { from?: string; to?: string; category
   );
   const providersVerified = (await one<{ c: number }>(`SELECT COUNT(*) AS c FROM provider_profiles WHERE verification_status = 'verified'`))?.c ?? 0;
   const providersAll = (await one<{ c: number }>(`SELECT COUNT(*) AS c FROM provider_profiles`))?.c ?? 0;
-  const resourcesListed = await one<{ c: number }>(
+  const resourcesListed = (await one<{ c: number }>(
     `SELECT COUNT(*) AS c FROM resources r WHERE r.status = 'active' ${catClause}`, ...catParams
-  )?.c ?? 0;
+  ))?.c ?? 0;
 
   const underused = await one<{ units: number; listings: number }>(
     `SELECT COALESCE(SUM(MAX(r.quantity_total - r.quantity_active, 0)),0) AS units, COUNT(*) AS listings

@@ -18,8 +18,8 @@ export default async function EditListingPage({ params }: { params: Promise<{ id
   const r = await ownedResource(Number(id), user);
   if (!r) notFound(); // ownership check: another provider's listing is a 404
 
-  const images = await all<{ url: string }>(`SELECT url FROM resource_images WHERE resource_id = ? ORDER BY sort_order`, r.id).map((i) => i.url);
-  const blocked = await all<{ date: string }>(`SELECT date FROM resource_availability WHERE resource_id = ?`, r.id).map((b) => b.date);
+  const images = (await all<{ url: string }>(`SELECT url FROM resource_images WHERE resource_id = ? ORDER BY sort_order`, r.id)).map((i) => i.url);
+  const blocked = (await all<{ date: string }>(`SELECT date FROM resource_availability WHERE resource_id = ?`, r.id)).map((b) => b.date);
   const bookings = await all<Row>(
     `SELECT b.*, u.full_name AS buyer_name FROM bookings b JOIN users u ON u.id = b.buyer_id
       WHERE b.resource_id = ? ORDER BY b.created_at DESC LIMIT 20`, r.id

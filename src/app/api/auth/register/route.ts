@@ -43,7 +43,8 @@ export const POST = guard(async (req: Request) => {
     d.wants_provider ? "provider" : "buyer"
   );
   const userId = Number(r.lastInsertRowid);
-  const user = await one(`SELECT * FROM users WHERE id = ?`, userId)!;
+  const user = await one(`SELECT * FROM users WHERE id = ?`, userId);
+  if (!user) return fail("Account could not be created", 500);
   if (d.wants_provider) await ensureProviderProfile(user, d.org_name || d.full_name);
 
   await createSession(userId, { ua: req.headers.get("user-agent") || undefined, ip });

@@ -46,7 +46,7 @@ export function BookingPanel({ resource, authed, isOwner, isAdmin }: { resource:
         setQuote(res.data.quote ?? null);
       }
     };
-    const t = setTimeout(load, 220);
+    const t = setTimeout(() => void load(), 220);
     return () => { alive = false; clearTimeout(t); };
   }, [resource.id, start, end, units, basis]);
 

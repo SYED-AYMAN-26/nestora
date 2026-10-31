@@ -56,8 +56,10 @@ export async function POST(req: Request) {
 
   let providerId: number | null = null;
   if (d.wants_provider) {
-    const user = await one<Row>(`SELECT * FROM users WHERE id = ?`, userId)!;
+    const user = await one<Row>(`SELECT * FROM users WHERE id = ?`, userId);
+    if (!user) return NextResponse.json({ error: "Account not found" }, { status: 404 });
     const profile = await ensureProviderProfile(user, d.org_name ?? d.full_name);
+    if (!profile) return NextResponse.json({ error: "Could not create provider profile" }, { status: 500 });
     providerId = Number(profile.id);
     await run(`UPDATE users SET active_mode = 'provider' WHERE id = ?`, userId);
   }

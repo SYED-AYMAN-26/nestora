@@ -37,11 +37,12 @@ export function TopNav({ user }: { user: NavUser }) {
     if (!user) return;
     let alive = true;
     const load = async () => {
-      const r = await api<{ unread: number }>("/api/notifications");
-      if (alive && r.ok) setUnread(r.data.unread);
+      const r = await api<{ unread: number }>("/api/notifications").catch(() => null);
+      if (alive && r?.ok) setUnread(r.data.unread);
     };
-    load();
-    const t = setInterval(load, 45000);
+    // Fire-and-forget polling: the rejection is handled inside `load`.
+    void load();
+    const t = setInterval(() => void load(), 45000);
     return () => { alive = false; clearInterval(t); };
   }, [user, pathname]);
 

@@ -80,7 +80,7 @@ export function RecommendClient() {
           <Field label="Need from" htmlFor="rs"><Input id="rs" type="date" value={start} onChange={(e) => setStart(e.target.value)} /></Field>
           <Field label="until" htmlFor="re"><Input id="re" type="date" value={end} onChange={(e) => setEnd(e.target.value)} /></Field>
         </div>
-        <Button onClick={() => void run()} loading={busy} className="w-full">Find matching resources</Button>
+        <Button onClick={() => { void run(); }} loading={busy} className="w-full">Find matching resources</Button>
         {err && <div className="mt-2"><Alert kind="error">{err}</Alert></div>}
 
         <p className="mt-4 mb-1.5 text-[11px] uppercase tracking-wider text-ink-faint">Try an example</p>

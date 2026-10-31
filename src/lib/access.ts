@@ -46,5 +46,5 @@ export function pageParams(url: URL, defLimit = 24) {
 }
 
 export async function providerOwnedBookingIds(providerId: number) {
-  return await all<Row>(`SELECT id FROM bookings WHERE provider_id = ?`, providerId).map((r) => r.id);
+  return (await all<Row>(`SELECT id FROM bookings WHERE provider_id = ?`, providerId)).map((r) => r.id);
 }

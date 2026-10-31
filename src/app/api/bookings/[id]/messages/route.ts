@@ -19,7 +19,7 @@ export const POST = guard(async (req: Request, ctx: { params: Promise<{ id: stri
   await run(`INSERT INTO messages (booking_id, sender_id, body) VALUES (?,?,?)`, access.booking.id, user.id, parsed.data.body.trim());
 
   const counterparty = access.role === "buyer"
-    ? (await import("@/lib/db")).one<{ user_id: number }>(`SELECT user_id FROM provider_profiles WHERE id = ?`, access.booking.provider_id)?.user_id
+    ? (await (await import("@/lib/db")).one<{ user_id: number }>(`SELECT user_id FROM provider_profiles WHERE id = ?`, access.booking.provider_id))?.user_id
     : access.booking.buyer_id;
   if (counterparty) await notify(counterparty, "message", "New message", `${user.full_name}: ${parsed.data.body.slice(0, 80)}`, `/bookings/${access.booking.id}`);
   return ok({ sent: true });

@@ -49,7 +49,8 @@ export const POST = guard(async (req: Request) => {
     return fail(result.error, 409, { canJoinWaitingList: Boolean(result.waiting) });
   }
 
-  const booking = await one(`SELECT * FROM bookings WHERE id = ?`, result.bookingId)!;
+  const booking = await one(`SELECT * FROM bookings WHERE id = ?`, result.bookingId);
+  if (!booking) return fail("Booking was created but could not be reloaded", 500);
   const providerUser = await one<{ user_id: number }>(`SELECT user_id FROM provider_profiles WHERE id = ?`, booking.provider_id);
   if (providerUser) {
     await notify(providerUser.user_id, "booking_request", "New booking request",

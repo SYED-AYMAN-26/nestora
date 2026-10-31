@@ -295,10 +295,10 @@ export async function markPaymentPaid(paymentId: number, providerPaymentId?: str
 }
 
 export async function bookingPayments(bookingId: number) {
-  return await one<{ paid: number }>(
+  return (await one<{ paid: number }>(
     `SELECT COALESCE(SUM(amount),0) AS paid FROM payments WHERE booking_id = ? AND status='paid' AND kind != 'refund'`,
     bookingId
-  )?.paid ?? 0;
+  ))?.paid ?? 0;
 }
 
 export async function orderFor(orderId: string) {

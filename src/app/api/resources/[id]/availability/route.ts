@@ -25,7 +25,7 @@ export const GET = guard(async (req: Request, ctx: { params: Promise<{ id: strin
   const dayCursor = new Date(startDate);
   const calendar: { date: string; capacity: number; booked: number; available: number; blocked: boolean }[] = [];
   const blocks = new Set(
-    await all<{ date: string }>(`SELECT date FROM resource_availability WHERE resource_id = ? AND status != 'available'`, resourceId).map((b) => b.date)
+    (await all<{ date: string }>(`SELECT date FROM resource_availability WHERE resource_id = ? AND status != 'available'`, resourceId)).map((b) => b.date)
   );
   for (const m of await all<{ start_date: string; end_date: string | null }>(
     `SELECT start_date, end_date FROM maintenance_records WHERE resource_id = ? AND (end_date IS NULL OR end_date >= ?)`,

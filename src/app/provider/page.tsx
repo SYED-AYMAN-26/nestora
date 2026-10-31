@@ -27,11 +27,11 @@ export default async function ProviderHome() {
   const pending = bookings.filter((b) => b.status === "pending" || b.status === "counteroffered");
   const active = bookings.filter((b) => ["active", "return_requested", "ready_for_handover", "paid"].includes(b.status));
   const completed = bookings.filter((b) => b.status === "completed");
-  const earnings = await all<Row>(
+  const earnings = (await all<Row>(
     `SELECT COALESCE(SUM(p.amount),0) AS total FROM payments p JOIN bookings b ON b.id = p.booking_id
       WHERE b.provider_id = ? AND p.status = 'paid' AND p.kind != 'refund'`, p.id
-  )[0]?.total ?? 0;
-  const listings = underusedForProvider(p.id);
+  ))[0]?.total ?? 0;
+  const listings = await underusedForProvider(p.id);
   const underused = listings.filter((l) => l.classification !== "frequently_used");
   const openExtensions = await all<Row>(
     `SELECT e.*, b.code FROM extensions e JOIN bookings b ON b.id = e.booking_id

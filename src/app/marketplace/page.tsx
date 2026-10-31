@@ -30,9 +30,9 @@ export default async function MarketplacePage({ searchParams }: { searchParams: 
 
   const { items, total } = await searchResources({ ...filters, limit: 48 });
   const user = await getSessionUser();
-  const cities = await all<{ city: string }>(
+  const cities = (await all<{ city: string }>(
     `SELECT DISTINCT location_city AS city FROM resources WHERE status='active' AND location_city IS NOT NULL ORDER BY location_city`
-  ).map((c) => c.city);
+  )).map((c) => c.city);
   const capability = str(sp.capability);
   const filtered = capability ? items.filter((r) => String(r.capabilities || "").includes(capability)) : items;
 

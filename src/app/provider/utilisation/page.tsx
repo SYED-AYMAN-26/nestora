@@ -19,7 +19,7 @@ export default async function UtilisationPage() {
   const user = await getSessionUser();
   if (!user?.provider) redirect("/provider");
 
-  const items = underusedForProvider(user.provider.id);
+  const items = await underusedForProvider(user.provider.id);
   const totals = items.reduce(
     (a, r) => {
       a.units += Number(r.quantity_total);
