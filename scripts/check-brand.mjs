@@ -59,13 +59,24 @@ const files = walk(ROOT).filter((f) => !HISTORICAL.some((r) => r.test(f)));
 /* ------------------------------------------------------- A. legacy brand gone */
 group("A. The legacy brand is gone from the codebase");
 const leaks = [];
+// A migration note that NAMES the old brand is documentation, not leaked
+// branding. Allow it only when the line explicitly says it was renamed, and
+// assert that this exemption stays tiny (it must never become a loophole).
+const MIGRATION_NOTE = /renamed from/i;
+const exemptions = [];
 for (const f of files) {
   const text = fs.readFileSync(path.join(ROOT, f), "utf8");
   text.split("\n").forEach((line, i) => {
-    if (/RentLink/.test(line)) leaks.push(`${f}:${i + 1}: ${line.trim().slice(0, 80)}`);
+    if (!/RentLink/.test(line)) return;
+    if (MIGRATION_NOTE.test(line)) {
+      exemptions.push(`${f}:${i + 1}`);
+      return;
+    }
+    leaks.push(`${f}:${i + 1}: ${line.trim().slice(0, 80)}`);
   });
 }
-check(leaks.length === 0, "No file contains the string \"RentLink\"", leaks.slice(0, 5).join(" | ") || `${files.length} files scanned`);
+check(leaks.length === 0, "No file mentions the brand except an explicit \"renamed from\" note", leaks.slice(0, 5).join(" | ") || `${files.length} files scanned`);
+check(exemptions.length <= 2, "The historical-note exemption is not being used as a loophole", `${exemptions.length} line(s): ${exemptions.join(", ") || "none"}`);
 
 /* --------------------------------------------- B. protected identifiers intact */
 group("B. Technical identifiers were NOT renamed");
