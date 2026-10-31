@@ -25,21 +25,31 @@ export const GET = guard(async () => {
     refunds: (await one<{ c: number }>(`SELECT COUNT(*) AS c FROM payments WHERE kind = 'refund'`))?.c ?? 0,
   };
 
-  return ok({
-    counts,
-    recentBookings: all(
+  // These four were left un-awaited by the async migration: a Promise inside a
+  // returned object serialises as `{}`, so the admin dashboard silently received
+  // empty lists instead of data. Awaited explicitly here.
+  const [recentBookings, recentPayments, categories, settings] = await Promise.all([
+    all<Record<string, unknown>>(
       `SELECT b.id, b.code, b.status, b.start_date, b.end_date, b.total, r.title AS resource_title,
               p.display_name AS provider_name, u.full_name AS buyer_name, b.created_at
          FROM bookings b JOIN resources r ON r.id = b.resource_id JOIN provider_profiles p ON p.id = b.provider_id
          JOIN users u ON u.id = b.buyer_id ORDER BY b.created_at DESC LIMIT 15`
     ),
-    recentPayments: all(
+    all<Record<string, unknown>>(
       `SELECT pay.*, b.code FROM payments pay JOIN bookings b ON b.id = pay.booking_id ORDER BY pay.id DESC LIMIT 15`
     ),
+    all<Record<string, unknown>>(`SELECT * FROM categories ORDER BY sort_order`),
+    all<Record<string, unknown>>(`SELECT * FROM settings`),
+  ]);
+
+  return ok({
+    counts,
+    recentBookings,
+    recentPayments,
     audit: await listAudit(40),
-    categories: all(`SELECT * FROM categories ORDER BY sort_order`),
+    categories,
     taxonomy: CATEGORIES,
-    settings: all(`SELECT * FROM settings`),
+    settings,
   });
 });
 

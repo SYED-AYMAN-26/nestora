@@ -56,9 +56,13 @@ export const POST = guard(async (req: Request) => {
     if (dep) {
       const deduction = Math.min(d.deduction_amount, Number(dep.amount));
       await run(
-        `UPDATE deposits SET status = ?, released_amount = MAX(? - ?, 0), deducted_amount = ?, note = ?, updated_at = ? WHERE id = ?`,
+        // CASE rather than SQLite's two-argument MAX(): identical result, valid on both engines.
+        `UPDATE deposits SET status = ?, released_amount = ?, deducted_amount = ?, note = ?, updated_at = ? WHERE id = ?`,
         deduction > 0 ? "partially_released" : "released",
-        Number(dep.amount), deduction, deduction,
+        // Computed in JS rather than SQL: a bound parameter has no type on
+        // PostgreSQL, so `? - ?` fails with "operator is not unique". The value
+        // is clamped here instead, which is identical arithmetic and portable.
+        Math.max(Number(dep.amount) - deduction, 0), deduction,
         `Admin dispute decision: ${d.decision_note}`, new Date().toISOString(), dep.id
       );
     } else if (d.deduction_amount > 0) {

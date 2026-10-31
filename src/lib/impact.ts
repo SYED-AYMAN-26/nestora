@@ -28,7 +28,11 @@ export async function computeImpact(opts: { from?: string; to?: string; category
   ))?.c ?? 0;
 
   const underused = await one<{ units: number; listings: number }>(
-    `SELECT COALESCE(SUM(MAX(r.quantity_total - r.quantity_active, 0)),0) AS units, COUNT(*) AS listings
+    // Portable scalar max: SQLite's MAX(a,b) is Postgres's GREATEST(a,b),
+    // so the expression is written as a CASE, which both engines accept.
+    `SELECT COALESCE(SUM(CASE WHEN r.quantity_total - r.quantity_active > 0
+                              THEN r.quantity_total - r.quantity_active ELSE 0 END),0) AS units,
+            COUNT(*) AS listings
        FROM resources r
       WHERE r.status = 'active' AND COALESCE(r.utilisation_state,'') != 'frequently_used' ${catClause}`, ...catParams
   );

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Card, PageHeader, Badge, InfoNote, type StatusTone } from "@/components/ui";
-import { one } from "@/lib/db";
+import { isPostgres, one } from "@/lib/db";
 import { paymentModeLabel, razorpayConfigured } from "@/lib/payments";
 import { externalChannels } from "@/lib/audit";
 
@@ -115,7 +115,17 @@ export default async function VerificationReportPage() {
     payments: (await one<{ c: number }>(`SELECT COUNT(*) AS c FROM payments`))?.c ?? 0,
     disputes: (await one<{ c: number }>(`SELECT COUNT(*) AS c FROM disputes`))?.c ?? 0,
     audit: (await one<{ c: number }>(`SELECT COUNT(*) AS c FROM audit_logs`))?.c ?? 0,
-    tables: (await one<{ c: number }>(`SELECT COUNT(*) AS c FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'`))?.c ?? 0,
+    // Table count is engine-specific: SQLite keeps it in sqlite_master, Postgres
+    // in information_schema. Reading the wrong catalogue is a hard error, so ask
+    // the adapter which engine is live.
+    tables:
+      (isPostgres
+        ? (await one<{ c: number }>(
+            `SELECT COUNT(*) AS c FROM information_schema.tables WHERE table_schema = 'public'`
+          ))?.c
+        : (await one<{ c: number }>(
+            `SELECT COUNT(*) AS c FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'`
+          ))?.c) ?? 0,
   };
   const statusCount = (s: Status) => FEATURES.flatMap((f) => f.items).filter((i) => i.status === s).length;
   const channels = externalChannels();

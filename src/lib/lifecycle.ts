@@ -280,7 +280,7 @@ export async function providerConfirmReturn(ctx: BookingCtx, opts: {
     "Equipment returned and inspected; deposit released (demo mode — no real funds moved).", new Date().toISOString(), b.id);
   await run(`UPDATE resources SET status = status, updated_at = ? WHERE id = ?`, new Date().toISOString(), b.resource_id);
   await run(`INSERT INTO booking_usage (user_id, resource_id, completed_bookings) VALUES (?,?,1)
-       ON CONFLICT(user_id, resource_id) DO UPDATE SET completed_bookings = completed_bookings + 1, updated_at = ?`,
+       ON CONFLICT(user_id, resource_id) DO UPDATE SET completed_bookings = booking_usage.completed_bookings + 1, updated_at = ?`,
     b.buyer_id, b.resource_id, new Date().toISOString());
   await recomputeProviderUtilisation(b.provider_id);
   await notify(b.buyer_id, "booking_update", "Booking completed", `${b.code} is complete. Leave a review to help other buyers.`, `/bookings/${b.id}`);

@@ -71,13 +71,28 @@ async function login(email, password = "Demo@1234") {
 }
 const cookieFor = (e) => LEDGER.get(e);
 
-// Direct DB access to the ISOLATED test database only.
-// NOTE: opened *after* startServer(), which (re)creates the file — opening first
-// would leave this handle pointing at a deleted inode (the classic WAL trap).
-const Database = (await import("better-sqlite3")).default;
-const db = new Database(".paytest/integration.db");
-const q = (sql, ...a) => db.prepare(sql).all(...a);
-const q1 = (sql, ...a) => db.prepare(sql).get(...a);
+// Direct DB access to the ISOLATED test database only, through the app's own
+// adapter so this suite runs identically on SQLite and PostgreSQL.
+// NOTE: the SQLite file is only opened *after* startServer(), which (re)creates
+// it — opening first would leave the handle on a deleted inode (the WAL trap).
+// The harness must read the SAME isolated database the test server uses.
+// INTEGRATION_DATABASE_URL switches both the suite and the server to PostgreSQL;
+// otherwise both use the throwaway SQLite file.
+if (process.env.INTEGRATION_DATABASE_URL) {
+  process.env.DATABASE_URL = process.env.INTEGRATION_DATABASE_URL;
+  delete process.env.DATABASE_PATH;
+} else {
+  process.env.DATABASE_PATH = ".paytest/integration.db";
+  delete process.env.DATABASE_URL;
+}
+const { register } = await import("esbuild-register/dist/node.js");
+register();
+const adapter = (await import("node:module")).createRequire(import.meta.url)(
+  `${process.cwd()}/src/lib/db.ts`
+);
+const q = (sql, ...a) => adapter.all(sql, ...a);
+const q1 = (sql, ...a) => adapter.one(sql, ...a);
+const dbRun = (sql, ...a) => adapter.run(sql, ...a);
 
 const sign = (orderId, paymentId) =>
   crypto.createHmac("sha256", KEY_SECRET).update(`${orderId}|${paymentId}`).digest("hex");
@@ -130,23 +145,23 @@ async function bookableBooking({ daily = 900, deposit = 2000, autoApprove = true
   if (booking.status !== 200) throw new Error(`booking: ${booking.status} ${booking.text.slice(0, 300)}`);
   const bookingId = booking.json.bookingId ?? booking.json.booking?.id ?? booking.json.id;
   if (!bookingId) throw new Error(`booking response had no id: ${booking.text.slice(0, 300)}`);
-  if (!q1(`SELECT id FROM bookings WHERE id = ?`, bookingId)) {
+  if (!(await q1(`SELECT id FROM bookings WHERE id = ?`, bookingId))) {
     throw new Error(`booking ${bookingId} not in test DB — response was: ${booking.text.slice(0, 300)}`);
   }
   await login(prov.email, "TestPass@2026"); // single-active session per user
   // Re-read the cookie: sessions are single-active, so the earlier one is now dead.
   prov.cookie = cookieFor(prov.email);
-  const row = q1(`SELECT * FROM bookings WHERE id = ?`, bookingId);
+  const row = await q1(`SELECT * FROM bookings WHERE id = ?`, bookingId);
   return { bookingId, buyer, provider: prov, resourceId, total: row.total, snapshot: JSON.parse(row.price_snapshot) };
 }
 
 /** Inserts the order row the create route would have written (see file header). */
-function insertOrder(booking, { orderId = `order_IT${crypto.randomBytes(6).toString("hex")}`, amount } = {}) {
+async function insertOrder(booking, { orderId = `order_IT${crypto.randomBytes(6).toString("hex")}`, amount } = {}) {
   const now = new Date().toISOString();
-  db.prepare(
+  await dbRun(
     `INSERT INTO payments (booking_id, kind, amount, currency, mode, status, provider_order_id, meta, created_at)
-     VALUES (?,?,?,?,?,?,?,?,?)`
-  ).run(booking.bookingId, "rental", amount ?? booking.total, "INR", "razorpay", "created", orderId,
+     VALUES (?,?,?,?,?,?,?,?,?)`,
+    booking.bookingId, "rental", amount ?? booking.total, "INR", "razorpay", "created", orderId,
     JSON.stringify({ order_amount_paise: Math.round((amount ?? booking.total) * 100), currency: "INR" }), now);
   return orderId;
 }
@@ -155,10 +170,10 @@ function setGateway(paymentId, entry) {
   state[paymentId] = entry;
   fs.writeFileSync(stateFile, JSON.stringify(state, null, 2));
 }
-function capturedRow(bookingId) {
-  return q1(`SELECT * FROM payments WHERE booking_id = ? AND status = 'paid'`, bookingId);
+async function capturedRow(bookingId) {
+  return await q1(`SELECT * FROM payments WHERE booking_id = ? AND status = 'paid'`, bookingId);
 }
-const bookingStatus = (id) => q1(`SELECT status FROM bookings WHERE id = ?`, id)?.status;
+const bookingStatus = async (id) => (await q1(`SELECT status FROM bookings WHERE id = ?`, id))?.status;
 
 function webhookBody({ event, orderId, paymentId, amountPaise, currency, status }) {
   const entity = { id: paymentId, entity: "payment", order_id: orderId, status: status ?? "captured" };
@@ -209,14 +224,14 @@ try {
   group("3. Webhook signature enforcement");
   {
     const b = await bookableBooking();
-    const orderId = insertOrder(b);
+    const orderId = await insertOrder(b);
     const raw = webhookBody({ event: "payment.captured", orderId, paymentId: "pay_SIGBAD", amountPaise: Math.round(b.total * 100), currency: "INR" });
 
     const noSig = await req("/api/payments/webhook", { method: "POST", raw, headers: { "content-type": "application/json" } });
     check(noSig.status === 400, "Webhook without a signature is rejected", `status ${noSig.status}`);
     const badSig = await req("/api/payments/webhook", { method: "POST", raw, headers: { "content-type": "application/json", "x-razorpay-signature": "deadbeef" } });
     check(badSig.status === 400, "Webhook with a wrong signature is rejected", `status ${badSig.status}`);
-    check(bookingStatus(b.bookingId) !== "paid", "Booking untouched after rejected webhooks", bookingStatus(b.bookingId));
+    check(await bookingStatus(b.bookingId) !== "paid", "Booking untouched after rejected webhooks", await bookingStatus(b.bookingId));
 
     // tamper AFTER signing (raw body must be verified exactly)
     const good = webhookHeaders(raw);
@@ -224,14 +239,14 @@ try {
     const t = await req("/api/payments/webhook", { method: "POST", raw: tampered, headers: { ...good, "content-type": "application/json" } });
     check(t.status === 400, "Body modified after signing is rejected", `status ${t.status}`);
 
-    const audit = q(`SELECT action FROM audit_logs WHERE action LIKE 'payment.webhook_signature_invalid' ORDER BY id DESC LIMIT 1`);
+    const audit = await q(`SELECT action FROM audit_logs WHERE action LIKE 'payment.webhook_signature_invalid' ORDER BY id DESC LIMIT 1`);
     check(audit.length === 1, "Rejected signatures are audited");
 
     // correct signature, unknown order
     const raw2 = webhookBody({ event: "payment.captured", orderId: "order_NOT_OURS", paymentId: "pay_UNKNOWN", amountPaise: 100, currency: "INR" });
     const unknown = await req("/api/payments/webhook", { method: "POST", raw: raw2, headers: { ...webhookHeaders(raw2), "content-type": "application/json" } });
     check(unknown.status === 200 && unknown.json?.ignored === true, "Signed webhook for an unknown order is ignored, not settled", JSON.stringify(unknown.json));
-    const ua = q(`SELECT action FROM audit_logs WHERE action = 'payment.webhook_unknown_order' ORDER BY id DESC LIMIT 1`);
+    const ua = await q(`SELECT action FROM audit_logs WHERE action = 'payment.webhook_unknown_order' ORDER BY id DESC LIMIT 1`);
     check(ua.length === 1, "Unknown order is audited");
   }
 
@@ -239,14 +254,14 @@ try {
   group("4. Amount and currency validation (rupees stored, paise reported)");
   {
     const b = await bookableBooking({ daily: 700, deposit: 1500, days: 2 });
-    const orderId = insertOrder(b);
+    const orderId = await insertOrder(b);
     const correctPaise = Math.round(b.total * 100);
 
     // incorrect amount
     const lowBody = webhookBody({ event: "payment.captured", orderId, paymentId: "pay_LOW", amountPaise: correctPaise - 1, currency: "INR" });
     const low = await req("/api/payments/webhook", { method: "POST", raw: lowBody, headers: { ...webhookHeaders(lowBody), "content-type": "application/json" } });
     check(low.json?.reason === "amount mismatch", "Wrong amount is rejected", low.json?.reason);
-    check(bookingStatus(b.bookingId) !== "paid", "Booking not paid after a wrong amount");
+    check(await bookingStatus(b.bookingId) !== "paid", "Booking not paid after a wrong amount");
 
     // wrong currency
     const curBody = webhookBody({ event: "payment.captured", orderId, paymentId: "pay_USD", amountPaise: correctPaise, currency: "USD" });
@@ -263,16 +278,16 @@ try {
     const nc = await req("/api/payments/webhook", { method: "POST", raw: noCur, headers: { ...webhookHeaders(noCur), "content-type": "application/json" } });
     check(/missing amount/.test(nc.json?.reason ?? ""), "Capture without a currency is rejected", nc.json?.reason);
 
-    check(bookingStatus(b.bookingId) !== "paid", "Still unpaid after every malformed delivery");
-    const auditCount = q(`SELECT COUNT(*) AS c FROM audit_logs WHERE action IN ('payment.webhook_amount_mismatch','payment.webhook_currency_mismatch','payment.webhook_missing_amount')`)[0].c;
+    check(await bookingStatus(b.bookingId) !== "paid", "Still unpaid after every malformed delivery");
+    const auditCount = (await q(`SELECT COUNT(*) AS c FROM audit_logs WHERE action IN ('payment.webhook_amount_mismatch','payment.webhook_currency_mismatch','payment.webhook_missing_amount')`))[0].c;
     check(auditCount >= 4, "Every rejected delivery is audited", `${auditCount} audit rows`);
 
     // the correct amount, in paise, settles — this is the rupees-vs-paise bug guard
     const okBody = webhookBody({ event: "payment.captured", orderId, paymentId: "pay_RIGHTPAISE", amountPaise: correctPaise, currency: "INR" });
     const okRes = await req("/api/payments/webhook", { method: "POST", raw: okBody, headers: { ...webhookHeaders(okBody), "content-type": "application/json" } });
     check(okRes.status === 200 && okRes.json?.idempotent === false, "Correct paise amount settles the booking", JSON.stringify(okRes.json));
-    check(bookingStatus(b.bookingId) === "paid", "Booking is paid after the correct delivery");
-    const row = capturedRow(b.bookingId);
+    check(await bookingStatus(b.bookingId) === "paid", "Booking is paid after the correct delivery");
+    const row = await capturedRow(b.bookingId);
     check(Math.round(row.amount * 100) === correctPaise, "Stored amount is in RUPEES and equals total", `₹${row.amount} vs ${correctPaise}p`);
   }
 
@@ -280,7 +295,7 @@ try {
   group("5. Repeated captured webhooks (real HTTP)");
   {
     const b = await bookableBooking();
-    const orderId = insertOrder(b);
+    const orderId = await insertOrder(b);
     const paise = Math.round(b.total * 100);
     const body = webhookBody({ event: "payment.captured", orderId, paymentId: "pay_IDEMPOTENT", amountPaise: paise, currency: "INR" });
     const hdrs = { ...webhookHeaders(body), "content-type": "application/json" };
@@ -291,8 +306,8 @@ try {
     check(r1.json?.idempotent === false, "First delivery settles", JSON.stringify(r1.json));
     check(r2.json?.idempotent === true, "Second delivery is idempotent");
     check(r3.json?.idempotent === true, "Third delivery is idempotent");
-    check(q(`SELECT * FROM payments WHERE booking_id = ? AND status='paid'`, b.bookingId).length === 1, "Exactly one paid row");
-    const repeated = q(`SELECT action FROM audit_logs WHERE action = 'payment.webhook_repeated'`).length;
+    check((await q(`SELECT * FROM payments WHERE booking_id = ? AND status='paid'`, b.bookingId)).length === 1, "Exactly one paid row");
+    const repeated = (await q(`SELECT action FROM audit_logs WHERE action = 'payment.webhook_repeated'`)).length;
     check(repeated >= 2, "Repeated deliveries are audited", `${repeated} rows`);
   }
 
@@ -300,45 +315,45 @@ try {
   group("6. Authorized-but-uncaptured never marks a booking paid");
   {
     const b = await bookableBooking();
-    const orderId = insertOrder(b);
+    const orderId = await insertOrder(b);
     const body = webhookBody({ event: "payment.authorized", orderId, paymentId: "pay_AUTHORIZED", amountPaise: Math.round(b.total * 100), currency: "INR", status: "authorized" });
     const r = await req("/api/payments/webhook", { method: "POST", raw: body, headers: { ...webhookHeaders(body), "content-type": "application/json" } });
     check(r.json?.bookingPaid === false, "Webhook acknowledges but reports bookingPaid:false", JSON.stringify(r.json));
-    check(bookingStatus(b.bookingId) !== "paid", "Booking is NOT paid after authorization", bookingStatus(b.bookingId));
-    const row = q1(`SELECT status FROM payments WHERE provider_order_id = ?`, orderId);
+    check(await bookingStatus(b.bookingId) !== "paid", "Booking is NOT paid after authorization", await bookingStatus(b.bookingId));
+    const row = await q1(`SELECT status FROM payments WHERE provider_order_id = ?`, orderId);
     check(row.status === "authorized", "Payment row is 'authorized'", row.status);
-    check(q(`SELECT * FROM payments WHERE booking_id = ? AND status='paid'`, b.bookingId).length === 0, "No paid row exists");
+    check((await q(`SELECT * FROM payments WHERE booking_id = ? AND status='paid'`, b.bookingId)).length === 0, "No paid row exists");
 
     // a later capture on the same order does settle it (that is the correct sequence)
     const cap = webhookBody({ event: "payment.captured", orderId, paymentId: "pay_AUTHORIZED", amountPaise: Math.round(b.total * 100), currency: "INR" });
     const c = await req("/api/payments/webhook", { method: "POST", raw: cap, headers: { ...webhookHeaders(cap), "content-type": "application/json" } });
     check(c.json?.idempotent === false, "A later capture event settles the same order", JSON.stringify(c.json));
-    check(bookingStatus(b.bookingId) === "paid", "Booking paid once actually captured");
+    check(await bookingStatus(b.bookingId) === "paid", "Booking paid once actually captured");
   }
 
   /* ======================================================= 7. failed payment */
   group("7. Failed and refunded payments cannot become paid");
   {
     const b = await bookableBooking();
-    const orderId = insertOrder(b);
+    const orderId = await insertOrder(b);
     const failBody = webhookBody({ event: "payment.failed", orderId, paymentId: "pay_FAILED", amountPaise: Math.round(b.total * 100), currency: "INR", status: "failed" });
     await req("/api/payments/webhook", { method: "POST", raw: failBody, headers: { ...webhookHeaders(failBody), "content-type": "application/json" } });
-    check(q1(`SELECT status FROM payments WHERE provider_order_id = ?`, orderId).status === "failed", "Failed event marks the payment failed");
-    check(bookingStatus(b.bookingId) !== "paid", "Booking not paid after failure");
+    check((await q1(`SELECT status FROM payments WHERE provider_order_id = ?`, orderId)).status === "failed", "Failed event marks the payment failed");
+    check(await bookingStatus(b.bookingId) !== "paid", "Booking not paid after failure");
 
     const capBody = webhookBody({ event: "payment.captured", orderId, paymentId: "pay_FAILED", amountPaise: Math.round(b.total * 100), currency: "INR" });
     const c = await req("/api/payments/webhook", { method: "POST", raw: capBody, headers: { ...webhookHeaders(capBody), "content-type": "application/json" } });
     check(c.json?.ignored === true && c.json?.reason === "payment_failed", "A capture event cannot resurrect a failed payment", JSON.stringify(c.json));
-    check(bookingStatus(b.bookingId) !== "paid", "Booking still not paid");
+    check(await bookingStatus(b.bookingId) !== "paid", "Booking still not paid");
 
     const b2 = await bookableBooking();
-    const o2 = insertOrder(b2);
+    const o2 = await insertOrder(b2);
     const paise = Math.round(b2.total * 100);
     const cap2 = webhookBody({ event: "payment.captured", orderId: o2, paymentId: "pay_REFUND", amountPaise: paise, currency: "INR" });
     await req("/api/payments/webhook", { method: "POST", raw: cap2, headers: { ...webhookHeaders(cap2), "content-type": "application/json" } });
     const refBody = webhookBody({ event: "payment.refunded", orderId: o2, paymentId: "pay_REFUND", amountPaise: paise, currency: "INR", status: "refunded" });
     await req("/api/payments/webhook", { method: "POST", raw: refBody, headers: { ...webhookHeaders(refBody), "content-type": "application/json" } });
-    check(q1(`SELECT status FROM payments WHERE provider_order_id = ?`, o2).status === "refunded", "Refund event marks the payment refunded");
+    check((await q1(`SELECT status FROM payments WHERE provider_order_id = ?`, o2)).status === "refunded", "Refund event marks the payment refunded");
     const again = webhookBody({ event: "payment.captured", orderId: o2, paymentId: "pay_REFUND", amountPaise: paise, currency: "INR" });
     const a = await req("/api/payments/webhook", { method: "POST", raw: again, headers: { ...webhookHeaders(again), "content-type": "application/json" } });
     check(a.json?.reason === "payment_refunded", "A refused payment cannot be re-settled by a capture event", JSON.stringify(a.json));
@@ -349,7 +364,7 @@ try {
   {
     const a = await bookableBooking();
     const b = await bookableBooking();
-    const orderA = insertOrder(a);
+    const orderA = await insertOrder(a);
     // order A presented against booking B, with a valid signature
     const payId = "pay_CROSSBOOK";
     setGateway(payId, { order_id: orderA, amount: Math.round(b.total * 100), currency: "INR", status: "captured" });
@@ -358,13 +373,13 @@ try {
       body: { action: "confirm", bookingId: b.bookingId, razorpay_order_id: orderA, razorpay_payment_id: payId, razorpay_signature: sign(orderA, payId) },
     });
     check(confirm.status >= 400, "A valid signature over another booking's order is rejected", `status ${confirm.status} ${confirm.json?.error ?? ""}`);
-    check(bookingStatus(b.bookingId) !== "paid", "The victim booking was NOT paid", bookingStatus(b.bookingId));
-    check(bookingStatus(a.bookingId) !== "paid", "The order's own booking was NOT paid either", bookingStatus(a.bookingId));
+    check(await bookingStatus(b.bookingId) !== "paid", "The victim booking was NOT paid", await bookingStatus(b.bookingId));
+    check(await bookingStatus(a.bookingId) !== "paid", "The order's own booking was NOT paid either", await bookingStatus(a.bookingId));
 
     // reuse the same payment id on two different orders (both captured)
     const c = await bookableBooking();
     const d = await bookableBooking();
-    const o1 = insertOrder(c), o2 = insertOrder(d);
+    const o1 = await insertOrder(c), o2 = await insertOrder(d);
     const shared = "pay_SHARED_HTTP";
     setGateway(shared, { order_id: o1, amount: Math.round(c.total * 100), currency: "INR", status: "captured" });
     const first = await req("/api/payments", { method: "POST", cookie: c.buyer.cookie, body: { action: "confirm", bookingId: c.bookingId, razorpay_order_id: o1, razorpay_payment_id: shared, razorpay_signature: sign(o1, shared) } });
@@ -372,17 +387,17 @@ try {
     setGateway(shared, { order_id: o2, amount: Math.round(d.total * 100), currency: "INR", status: "captured" });
     const second = await req("/api/payments", { method: "POST", cookie: d.buyer.cookie, body: { action: "confirm", bookingId: d.bookingId, razorpay_order_id: o2, razorpay_payment_id: shared, razorpay_signature: sign(o2, shared) } });
     check(second.status === 409, "Reusing that payment id on another order is rejected", `status ${second.status} ${second.json?.error ?? ""}`);
-    check(bookingStatus(d.bookingId) !== "paid", "The second booking stays unpaid");
+    check(await bookingStatus(d.bookingId) !== "paid", "The second booking stays unpaid");
 
     // a different buyer cannot pay someone else's booking
     const e = await bookableBooking();
-    const orderE = insertOrder(e);
+    const orderE = await insertOrder(e);
     const intruder = await fixture(`intruder${Math.random().toString(36).slice(2, 6)}`);
     const payE = "pay_INTRUDER";
     setGateway(payE, { order_id: orderE, amount: Math.round(e.total * 100), currency: "INR", status: "captured" });
     const hack = await req("/api/payments", { method: "POST", cookie: intruder.cookie, body: { action: "confirm", bookingId: e.bookingId, razorpay_order_id: orderE, razorpay_payment_id: payE, razorpay_signature: sign(orderE, payE) } });
     check([403, 404].includes(hack.status), "Another user cannot pay for a booking they do not own", `status ${hack.status}`);
-    check(bookingStatus(e.bookingId) !== "paid", "Booking untouched by the intruder attempt");
+    check(await bookingStatus(e.bookingId) !== "paid", "Booking untouched by the intruder attempt");
 
     // a provider cannot pay their own listing
     const selfPay = await req("/api/payments", { method: "POST", cookie: e.provider.cookie, body: { action: "confirm", bookingId: e.bookingId, razorpay_order_id: orderE, razorpay_payment_id: payE, razorpay_signature: sign(orderE, payE) } });
@@ -393,19 +408,19 @@ try {
   group("9. Checkout confirmation requires a captured payment (gateway API mocked)");
   {
     const b = await bookableBooking({ daily: 600, deposit: 900 });
-    const orderId = insertOrder(b);
+    const orderId = await insertOrder(b);
     const paise = Math.round(b.total * 100);
 
     // gateway says authorized only
     setGateway("pay_AUTH_ONLY", { order_id: orderId, amount: paise, currency: "INR", status: "authorized" });
     const auth = await req("/api/payments", { method: "POST", cookie: b.buyer.cookie, body: { action: "confirm", bookingId: b.bookingId, razorpay_order_id: orderId, razorpay_payment_id: "pay_AUTH_ONLY", razorpay_signature: sign(orderId, "pay_AUTH_ONLY") } });
     check(auth.status === 409, "Authorised-but-uncaptured confirm is refused", `status ${auth.status} ${auth.json?.error ?? ""}`);
-    check(bookingStatus(b.bookingId) !== "paid", "Booking not paid on authorization");
+    check(await bookingStatus(b.bookingId) !== "paid", "Booking not paid on authorization");
 
     // bad checkout signature
     const badSig = await req("/api/payments", { method: "POST", cookie: b.buyer.cookie, body: { action: "confirm", bookingId: b.bookingId, razorpay_order_id: orderId, razorpay_payment_id: "pay_AUTH_ONLY", razorpay_signature: "f".repeat(64) } });
     check(badSig.status === 400, "Invalid checkout signature is refused", `status ${badSig.status}`);
-    const audited = q(`SELECT * FROM audit_logs WHERE action='payment.signature_invalid'`).length;
+    const audited = (await q(`SELECT * FROM audit_logs WHERE action='payment.signature_invalid'`)).length;
     check(audited >= 1, "Invalid signature is audited");
 
     // gateway reports a different order id
@@ -422,8 +437,8 @@ try {
     setGateway("pay_GOOD", { order_id: orderId, amount: paise, currency: "INR", status: "captured" });
     const good = await req("/api/payments", { method: "POST", cookie: b.buyer.cookie, body: { action: "confirm", bookingId: b.bookingId, razorpay_order_id: orderId, razorpay_payment_id: "pay_GOOD", razorpay_signature: sign(orderId, "pay_GOOD") } });
     check(good.status === 200, "Captured + correct amounts settle the booking", good.json?.message ?? good.json?.error);
-    check(bookingStatus(b.bookingId) === "paid", "Booking is paid");
-    const deposit = q1(`SELECT * FROM deposits WHERE booking_id = ?`, b.bookingId);
+    check(await bookingStatus(b.bookingId) === "paid", "Booking is paid");
+    const deposit = await q1(`SELECT * FROM deposits WHERE booking_id = ?`, b.bookingId);
     check(deposit?.status === "held_demo", "Deposit row is simulated (held_demo)");
     check(!/escrow/i.test(deposit?.note ?? "") || /not escrow|simulated/i.test(deposit?.note ?? ""), "Deposit note never claims real escrow", String(deposit?.note).slice(0, 60));
   }
@@ -432,18 +447,18 @@ try {
   group("10. Payment confirmed but the booking update cannot apply");
   {
     const b = await bookableBooking();
-    const orderId = insertOrder(b);
+    const orderId = await insertOrder(b);
     const paise = Math.round(b.total * 100);
     setGateway("pay_RACEHOOK", { order_id: orderId, amount: paise, currency: "INR", status: "captured" });
     // Cancel the booking first so the state transition has nothing to move.
-    db.prepare(`UPDATE bookings SET status='cancelled' WHERE id=?`).run(b.bookingId);
+    await dbRun(`UPDATE bookings SET status='cancelled' WHERE id=?`, b.bookingId);
     const body = webhookBody({ event: "payment.captured", orderId, paymentId: "pay_RACEHOOK", amountPaise: paise, currency: "INR" });
     const r = await req("/api/payments/webhook", { method: "POST", raw: body, headers: { ...webhookHeaders(body), "content-type": "application/json" } });
     check(r.status === 200, "Webhook still acknowledges a payment for a cancelled booking", `status ${r.status}`);
-    check(bookingStatus(b.bookingId) === "cancelled", "Booking status is NOT silently resurrected", bookingStatus(b.bookingId));
-    const paid = q1(`SELECT * FROM payments WHERE booking_id = ? AND status='paid'`, b.bookingId);
+    check(await bookingStatus(b.bookingId) === "cancelled", "Booking status is NOT silently resurrected", await bookingStatus(b.bookingId));
+    const paid = await q1(`SELECT * FROM payments WHERE booking_id = ? AND status='paid'`, b.bookingId);
     check(Boolean(paid), "The money record is still stored (auditable, refundable by a human)");
-    const auditRow = q(`SELECT * FROM audit_logs WHERE action='payment.webhook_captured' ORDER BY id DESC LIMIT 1`);
+    const auditRow = await q(`SELECT * FROM audit_logs WHERE action='payment.webhook_captured' ORDER BY id DESC LIMIT 1`);
     check(auditRow.length === 1, "The mismatch is audited for reconciliation");
   }
 
@@ -451,22 +466,22 @@ try {
   group("11. Provider price change after order creation");
   {
     const b = await bookableBooking({ daily: 500, deposit: 1000, days: 2 });
-    const orderId = insertOrder(b);
+    const orderId = await insertOrder(b);
     const originalPaise = Math.round(b.total * 100);
-    db.prepare(`UPDATE resources SET price_daily = 5000, deposit = 9000 WHERE id = ?`).run(b.resourceId);
+    await dbRun(`UPDATE resources SET price_daily = 5000, deposit = 9000 WHERE id = ?`, b.resourceId);
 
     const body = webhookBody({ event: "payment.captured", orderId, paymentId: "pay_LOCKHTTP", amountPaise: originalPaise, currency: "INR" });
     const r = await req("/api/payments/webhook", { method: "POST", raw: body, headers: { ...webhookHeaders(body), "content-type": "application/json" } });
     check(r.json?.idempotent === false, "Payment at the ORIGINAL locked price still settles", JSON.stringify(r.json));
-    check(bookingStatus(b.bookingId) === "paid", "Booking paid at the locked price");
-    const row = q1(`SELECT total FROM bookings WHERE id = ?`, b.bookingId);
+    check(await bookingStatus(b.bookingId) === "paid", "Booking paid at the locked price");
+    const row = await q1(`SELECT total FROM bookings WHERE id = ?`, b.bookingId);
     check(Math.round(row.total * 100) === originalPaise, "Booking total was not rewritten by the price change", `₹${row.total}`);
 
     // and a new order for the NEW price on the OLD booking must be refused
     const b2 = await bookableBooking({ daily: 500, deposit: 1000 });
-    db.prepare(`UPDATE resources SET price_daily = 5000, deposit = 9000 WHERE id = ?`).run(b2.resourceId);
+    await dbRun(`UPDATE resources SET price_daily = 5000, deposit = 9000 WHERE id = ?`, b2.resourceId);
     const inflated = Math.round((b2.total * 3) * 100);
-    const o2 = insertOrder(b2, { amount: b2.total * 3 });
+    const o2 = await insertOrder(b2, { amount: b2.total * 3 });
     const inflatedBody = webhookBody({ event: "payment.captured", orderId: o2, paymentId: "pay_INFLATED", amountPaise: inflated, currency: "INR" });
     const ir = await req("/api/payments/webhook", { method: "POST", raw: inflatedBody, headers: { ...webhookHeaders(inflatedBody), "content-type": "application/json" } });
     // The webhook compares the reported paise against the LOCKED price first, so a
@@ -477,14 +492,14 @@ try {
       "An order for a re-priced amount is rejected",
       JSON.stringify(ir.json)
     );
-    check(bookingStatus(b2.bookingId) !== "paid", "That booking stays unpaid");
+    check(await bookingStatus(b2.bookingId) !== "paid", "That booking stays unpaid");
   }
 
   /* ================================================ 12. concurrency over HTTP */
   group("12. Simultaneous confirmations");
   {
     const b = await bookableBooking();
-    const orderId = insertOrder(b);
+    const orderId = await insertOrder(b);
     const paise = Math.round(b.total * 100);
     const payId = "pay_CONCURRENT";
     setGateway(payId, { order_id: orderId, amount: paise, currency: "INR", status: "captured" });
@@ -496,8 +511,8 @@ try {
     const statuses = results.map((r) => r.status);
     check(statuses.every((s) => s === 200 || s === 409), "Concurrent confirms return coherent statuses", statuses.join(","));
     check(statuses.filter((s) => s === 200).length >= 1, "At least one confirm succeeded", statuses.join(","));
-    check(q(`SELECT * FROM payments WHERE booking_id = ? AND status='paid'`, b.bookingId).length === 1, "Only ONE paid row after concurrent confirms");
-    check(bookingStatus(b.bookingId) === "paid", "Booking is paid once");
+    check((await q(`SELECT * FROM payments WHERE booking_id = ? AND status='paid'`, b.bookingId)).length === 1, "Only ONE paid row after concurrent confirms");
+    check(await bookingStatus(b.bookingId) === "paid", "Booking is paid once");
     const idem = results.filter((r) => r.json?.idempotent === true).length;
     check(idem >= 1 || statuses.includes(409), "The duplicate is reported as idempotent (or refused)", `${idem} idempotent, statuses ${statuses.join(",")}`);
   }
@@ -525,7 +540,7 @@ try {
 }
 
 /* ================================================================= summary */
-db.close();
+await adapter.closeDb();
 const total = PASS.length + FAIL.length;
 console.log(`\n${"=".repeat(66)}`);
 console.log(`Payment integration: \x1b[32m${PASS.length} passed\x1b[0m, ${FAIL.length ? "\x1b[31m" : ""}${FAIL.length} failed\x1b[0m (${total} checks)`);

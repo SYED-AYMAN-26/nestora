@@ -62,29 +62,67 @@ export function startProxy(stateFile) {
   return new Promise((resolve) => server.listen(PROXY_PORT, "127.0.0.1", () => resolve(server)));
 }
 
+/**
+ * BACKEND=postgres runs the same integration suite against the PostgreSQL
+ * adapter. It needs an empty database (the suite assumes a clean slate); the
+ * default remains an isolated SQLite file so both engines can be compared.
+ */
+const PG_URL = process.env.INTEGRATION_DATABASE_URL || "";
+const USE_PG = Boolean(PG_URL);
+
 export async function startServer({ proxy = true } = {}) {
   const stateFile = ".paytest/gateway-state.json";
   fs.mkdirSync(".paytest", { recursive: true });
-  fs.rmSync(".paytest/integration.db", { force: true });
-  fs.rmSync(".paytest/integration.db-wal", { force: true });
-  fs.rmSync(".paytest/integration.db-shm", { force: true });
+  if (!USE_PG) {
+    fs.rmSync(".paytest/integration.db", { force: true });
+    fs.rmSync(".paytest/integration.db-wal", { force: true });
+    fs.rmSync(".paytest/integration.db-shm", { force: true });
+  }
   if (proxy) {
     fs.writeFileSync(stateFile, "{}");
     await startProxy(stateFile);
   }
 
   // Seed the isolated database with demo accounts (in place, never deleted).
-  await run("node", ["scripts/seed.mjs", "--reset"], {
-    DATABASE_PATH: ".paytest/integration.db",
-    ALLOW_DEMO_SEED: "1",
-  });
+  //
+  // scripts/seed.mjs is the SQLite demo seeder. On PostgreSQL the schema is
+  // created by scripts/migrate.mjs and the demo data is loaded with
+  // scripts/migrate-to-postgres.mjs from the local SQLite demo database — the
+  // same code path a real SQLite→PostgreSQL cutover uses. That is why the
+  // PostgreSQL integration run is a genuine end-to-end test of the migration
+  // tooling as well as of the payment routes.
+  if (USE_PG) {
+    await run("node", ["scripts/migrate.mjs"], {
+      DATABASE_URL: PG_URL,
+      PG_SSL_MODE: process.env.PG_SSL_MODE || "disable",
+    });
+    await run("node", ["scripts/migrate-to-postgres.mjs", "--apply", "--replace"], {
+      DATABASE_URL: PG_URL,
+      PG_SSL_MODE: process.env.PG_SSL_MODE || "disable",
+      ...(process.env.SOURCE_DATABASE_PATH ? { DATABASE_PATH: process.env.SOURCE_DATABASE_PATH } : {}),
+    });
+  } else {
+    await run("node", ["scripts/seed.mjs", "--reset"], {
+      DATABASE_PATH: ".paytest/integration.db",
+      ALLOW_DEMO_SEED: "1",
+    });
+  }
 
   const child = spawn("node_modules/.bin/next", ["start", "-p", String(SERVER_PORT), "-H", "127.0.0.1"], {
     env: {
       ...process.env,
       NODE_ENV: "production",
-      DATABASE_PATH: ".paytest/integration.db",
+      // A production build now REQUIRES a session secret (the old write-to-disk
+      // fallback was a serverless hazard). Tests supply a fixed throwaway one.
+      SESSION_SECRET: process.env.SESSION_SECRET || "integration-test-session-secret-0123456789",
+      ...(USE_PG
+        ? { DATABASE_URL: PG_URL, PG_SKIP_SCHEMA: "1", PG_SSL_MODE: process.env.PG_SSL_MODE || "disable" }
+        : { DATABASE_PATH: ".paytest/integration.db" }),
       ALLOW_TEST_FIXTURES: "1",
+      // This is a deliberately insecure, local-only test process (SQLite + no
+      // Blob store). A production build refuses to start without that, which is
+      // the correct behaviour; the test harness acknowledges it explicitly.
+      RENTLINK_ALLOW_INSECURE_PROD: "1",
       RAZORPAY_KEY_ID: KEY_ID,
       RAZORPAY_KEY_SECRET: KEY_SECRET,
       RAZORPAY_WEBHOOK_SECRET: WEBHOOK_SECRET,

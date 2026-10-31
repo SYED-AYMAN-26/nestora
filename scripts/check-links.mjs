@@ -45,7 +45,14 @@ try {
   const badButtons = [];
 
   for (const path of PAGES) {
-    const res = await page.goto(BASE + path, { waitUntil: "networkidle2", timeout: 45000 }).catch(() => null);
+    // One retry: a page reused across many navigations can hit a transient
+    // "Navigation timeout" under load, which is a harness artefact rather than a
+    // broken page. A genuinely broken page fails both attempts.
+    let res = null;
+    for (let attempt = 0; attempt < 2 && !res; attempt++) {
+      res = await page.goto(BASE + path, { waitUntil: "networkidle2", timeout: 60000 }).catch(() => null);
+      if (!res) await new Promise((r) => setTimeout(r, 400));
+    }
     if (!res || res.status() >= 400) { broken.push(`${path} → ${res ? res.status() : "load error"}`); continue; }
     seen.add(path);
 

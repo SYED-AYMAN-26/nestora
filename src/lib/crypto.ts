@@ -24,17 +24,38 @@ export function verifyPassword(password: string, stored: string): boolean {
 }
 
 // --- session secret -------------------------------------------------------
+let memoSecret: string | null = null;
+
+/**
+ * The key that signs session tokens.
+ *
+ * Production MUST set SESSION_SECRET. The old behaviour — silently generating one
+ * and writing it to `data/.session-secret` — is fine on a laptop but wrong on a
+ * serverless platform: the filesystem is read-only outside /tmp, so either the
+ * write throws or (worse, when it succeeds in /tmp) every instance gets its OWN
+ * secret and sessions are invalidated at random as requests land on different
+ * lambdas. On a production build a missing secret is therefore a hard error, and
+ * src/lib/config.ts reports it at startup.
+ */
 function sessionSecret(): string {
-  if (process.env.SESSION_SECRET) return process.env.SESSION_SECRET;
+  const configured = process.env.SESSION_SECRET;
+  if (configured) return configured;
+  if (process.env.NODE_ENV === "production") {
+    throw new Error(
+      "SESSION_SECRET is not set. A production deployment cannot derive a stable session secret; " +
+        "set SESSION_SECRET (openssl rand -hex 32) in the environment."
+    );
+  }
+  if (memoSecret) return memoSecret;
   const file = path.join(process.cwd(), "data", ".session-secret");
   try {
-    return fs.readFileSync(file, "utf8").trim();
+    memoSecret = fs.readFileSync(file, "utf8").trim();
   } catch {
     fs.mkdirSync(path.dirname(file), { recursive: true });
-    const secret = crypto.randomBytes(32).toString("hex");
-    fs.writeFileSync(file, secret, { mode: 0o600 });
-    return secret;
+    memoSecret = crypto.randomBytes(32).toString("hex");
+    fs.writeFileSync(file, memoSecret, { mode: 0o600 });
   }
+  return memoSecret;
 }
 
 export function newSessionToken(): string {

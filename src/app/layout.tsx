@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { TopNav } from "@/components/nav";
 import { getSessionUser } from "@/lib/auth";
+import { assertProductionConfigReady } from "@/instrumentation";
 import Link from "next/link";
 
 export const metadata: Metadata = {
@@ -19,6 +20,10 @@ export const viewport: Viewport = {
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  // Enforces production configuration on the first request even if the
+  // instrumentation hook was not wired into this build. A fatal problem throws,
+  // so an unsafe deployment serves nothing rather than degrading silently.
+  await assertProductionConfigReady();
   const user = await getSessionUser();
   const navUser = user
     ? {

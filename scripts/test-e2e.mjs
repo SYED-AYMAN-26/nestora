@@ -76,13 +76,34 @@ async function login(email, password = "Demo@1234") {
   return { ok: r.status === 200 && r.json?.ok !== false, jar: { header: () => LEDGER.get(email) ?? "" }, body: r.json, status: r.status };
 }
 
+/**
+ * Ground-truth helper for assertions that need to look at the database.
+ *
+ * Goes through the application's OWN adapter (src/lib/db.ts) rather than opening
+ * the SQLite file directly, so the same suite runs unchanged against SQLite and
+ * against PostgreSQL — that is what makes a cross-backend comparison honest.
+ */
 function dbQuery(sql) {
-  // Read-only helper for assertions that need ground truth from SQLite.
   const out = execFileSync("node", ["-e", `
-    const D=require('better-sqlite3');const db=new D('data/rentlink.db',{readonly:true});
-    const r=db.prepare(${JSON.stringify(sql)}).all();console.log(JSON.stringify(r));
-  `], { cwd: process.cwd(), encoding: "utf8" });
+    require('esbuild-register/dist/node.js').register();
+    const db = require('./src/lib/db.ts');
+    db.all(${JSON.stringify(sql)})
+      .then((r) => { console.log(JSON.stringify(r)); return db.closeDb(); })
+      .catch((e) => { console.error(e.message); process.exit(1); });
+  `], { cwd: process.cwd(), encoding: "utf8", env: process.env });
   return JSON.parse(out);
+}
+
+/** Runs statements (not a bare query) against the same database, write allowed. */
+function dbExec(statements) {
+  execFileSync("node", ["-e", `
+    require('esbuild-register/dist/node.js').register();
+    const db = require('./src/lib/db.ts');
+    (async () => {
+      for (const [sql, params] of ${JSON.stringify(statements)}) await db.run(sql, ...(params || []));
+      await db.closeDb();
+    })().catch((e) => { console.error(e.message); process.exit(1); });
+  `], { cwd: process.cwd(), encoding: "utf8", env: process.env });
 }
 
 const today = () => new Date().toISOString().slice(0, 10);
@@ -129,8 +150,15 @@ async function checkServer() {
   record(r.status === 200, "Landing page responds 200", `${r.text.length} bytes`);
   record(/Canon EOS 90D|RentLink/.test(r.text), "Landing page renders seeded content");
 
-  // Tables + row counts straight from the database file.
-  const tables = dbQuery(`SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'`);
+  // Tables + row counts straight from the database. The catalogue query differs
+  // per engine, so pick it from the adapter's reported backend instead of
+  // assuming SQLite.
+  const isPg = Boolean(process.env.DATABASE_URL);
+  const tables = dbQuery(
+    isPg
+      ? `SELECT table_name AS name FROM information_schema.tables WHERE table_schema='public'`
+      : `SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'`
+  );
   record(tables.length >= 25, "Schema has the expected tables", `${tables.length} tables`);
   const users = dbQuery(`SELECT COUNT(*) AS c FROM users`)[0].c;
   const resources = dbQuery(`SELECT COUNT(*) AS c FROM resources`)[0].c;
@@ -242,12 +270,11 @@ async function checkVerification() {
 
 /** Put the pending verification request back exactly as seeded. */
 function restorePendingVerification(requestId, providerId) {
-  execFileSync("node", ["-e", `
-    const D=require('better-sqlite3');const db=new D('data/rentlink.db');
-    db.prepare("UPDATE verification_requests SET status='pending', reviewer_id=NULL, reviewer_note=NULL, reviewed_at=NULL WHERE id=?").run(${requestId});
-    db.prepare("UPDATE provider_profiles SET verification_status='pending', verification_note=NULL, verified_at=NULL WHERE id=?").run(${providerId});
-    db.prepare("DELETE FROM sessions WHERE user_id = (SELECT user_id FROM provider_profiles WHERE id=?)").run(${providerId});
-  `], { cwd: process.cwd() });
+  dbExec([
+    ["UPDATE verification_requests SET status='pending', reviewer_id=NULL, reviewer_note=NULL, reviewed_at=NULL WHERE id=?", [requestId]],
+    ["UPDATE provider_profiles SET verification_status='pending', verification_note=NULL, verified_at=NULL WHERE id=?", [providerId]],
+    ["DELETE FROM sessions WHERE user_id = (SELECT user_id FROM provider_profiles WHERE id=?)", [providerId]],
+  ]);
 }
 
 /* --------------------------------------------------------- 4. listing mgmt */
@@ -733,7 +760,7 @@ async function main() {
     // end up looking at different files. Seeding truncates every table instead.
     console.log("Reseeding the database in place…");
     execFileSync("node", ["scripts/seed.mjs"], { stdio: "inherit", cwd: process.cwd() });
-    execFileSync("node", ["-e", "const D=require('better-sqlite3');const db=new D('data/rentlink.db');db.prepare('DELETE FROM rate_limits').run();"], { cwd: process.cwd() });
+    dbExec([["DELETE FROM rate_limits"]]);
   }
 
   const up = await checkServer();

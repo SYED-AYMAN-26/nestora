@@ -24,6 +24,7 @@ const MODULES = [
   "src/lib/audit.ts",
   "src/lib/payments.ts",
   "src/lib/env.ts",
+  "src/lib/schema.generated.ts",
 ];
 
 export function rewriteImports(source) {
@@ -65,7 +66,8 @@ export function build() {
       : fs.readFileSync(path.join("/tmp/paytest-tsc", base), "utf8");
     fs.writeFileSync(path.join(OUT, base), rewriteImports(source));
   }
-  // the schema is read at runtime relative to cwd — copy it next to the build
+  // The schema now ships as a generated TS module (schema.generated.ts) and is
+  // in MODULES above, so nothing has to be read from disk at runtime.
   fs.writeFileSync(path.join(OUT, "package.json"), JSON.stringify({ type: "module" }, null, 2));
   console.log("payment test build ready:", path.relative(ROOT, OUT));
   return OUT;

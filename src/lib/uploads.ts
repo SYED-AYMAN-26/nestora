@@ -1,16 +1,15 @@
 import fs from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
-import { ALLOWED_DOC_TYPES, ALLOWED_IMAGE_TYPES, MAX_UPLOAD_BYTES } from "./constants";
+import { ALLOWED_DOC_TYPES, ALLOWED_IMAGE_TYPES } from "./constants";
+import { fileTooLargeMessage, maxFileBytes } from "./uploadLimits";
+import { putFile } from "./storage";
 
 export const UPLOAD_ROOT = path.resolve(process.cwd(), process.env.UPLOAD_DIR || "uploads");
 export const PUBLIC_DIR = path.join(UPLOAD_ROOT, "public");
 export const PRIVATE_DIR = path.join(UPLOAD_ROOT, "private");
 
-function ensure() {
-  fs.mkdirSync(PUBLIC_DIR, { recursive: true });
-  fs.mkdirSync(PRIVATE_DIR, { recursive: true });
-}
+
 
 const EXT: Record<string, string> = {
   "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp",
@@ -32,7 +31,7 @@ export type SaveResult = { ok: true; url: string } | { ok: false; error: string 
 
 export async function saveUpload(file: File, kind: "image" | "document"): Promise<SaveResult> {
   if (!file || typeof file.arrayBuffer !== "function") return { ok: false, error: "No file provided" };
-  if (file.size > MAX_UPLOAD_BYTES) return { ok: false, error: `File too large (max ${MAX_UPLOAD_BYTES / 1048576} MB)` };
+  if (file.size > maxFileBytes) return { ok: false, error: fileTooLargeMessage(maxFileBytes) };
   if (file.size === 0) return { ok: false, error: "Empty file" };
   const buf = Buffer.from(await file.arrayBuffer());
   const sniffed = sniff(buf);
@@ -44,11 +43,14 @@ export async function saveUpload(file: File, kind: "image" | "document"): Promis
       error: `Unsupported file content. Allowed ${kind === "image" ? "JPEG, PNG, WebP" : "PDF, JPEG, PNG, WebP"}.`,
     };
   }
-  ensure();
   const name = `${Date.now().toString(36)}-${crypto.randomBytes(8).toString("hex")}.${EXT[mime]}`;
-  const target = kind === "image" ? PUBLIC_DIR : PRIVATE_DIR;
-  fs.writeFileSync(path.join(target, name), buf);
-  return { ok: true, url: kind === "image" ? `/api/files/public/${name}` : `/api/files/private/${name}` };
+  // Bytes go through the storage layer: local disk in development, durable
+  // object storage when BLOB_READ_WRITE_TOKEN is configured. The URL the app
+  // stores is always the authorised route, never a direct object URL.
+  const scope = kind === "image" ? "public" : "private";
+  const stored = await putFile(scope, name, buf, mime);
+  if (!stored.ok) return { ok: false, error: stored.error };
+  return { ok: true, url: stored.url };
 }
 
 export function resolveFile(scope: "public" | "private", name: string): string | null {

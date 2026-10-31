@@ -409,11 +409,42 @@ export async function settleCapturedPayment(opts: {
 
     // 6. settle: payment row, booking status, deposit record — atomically
     const now = new Date().toISOString();
-    await run(
+
+    // The UPDATE is the concurrency gate. Its `status IN (...)` guard means two
+    // requests racing on the same payment row cannot both win: on PostgreSQL the
+    // second blocks on the row lock and then re-evaluates the predicate, finding
+    // the row already 'paid' and matching zero rows.
+    //
+    // Checking the affected-row count is what makes that outcome observable. The
+    // previous code ignored it, so a losing racer still reported a fresh
+    // settlement for money that had already been recorded — a dishonest (though
+    // not double-crediting) confirmation. SQLite hid this because its writes are
+    // serialised; the PostgreSQL run exposed it.
+    const settledRows = await run(
       `UPDATE payments SET status='paid', paid_at=?, captured_at=?, provider_payment_id=?, signature_valid=1
         WHERE id = ? AND status IN ('created','pending','authorized')`,
       now, now, paymentId, payment.id
     );
+    if (settledRows.changes === 0) {
+      const current = await one<{ status: string; provider_payment_id: string | null }>(
+        `SELECT status, provider_payment_id FROM payments WHERE id = ?`,
+        payment.id
+      );
+      if (current?.status === "paid" && current.provider_payment_id === paymentId) {
+        const b = await one<{ status: string }>(`SELECT status FROM bookings WHERE id = ?`, bookingId);
+        return {
+          ok: true,
+          payment: { ...payment, status: "paid", provider_payment_id: paymentId },
+          idempotent: true,
+          bookingStatus: b?.status ?? "paid",
+        };
+      }
+      return {
+        ok: false, code: 409,
+        error: "That payment was already settled by a concurrent request. Nothing has been changed.",
+        reason: "concurrent_settle",
+      };
+    }
     await run(
       `UPDATE bookings SET status = CASE WHEN status IN ('approved','awaiting_payment') THEN 'paid' ELSE status END,
               updated_at = ? WHERE id = ?`,

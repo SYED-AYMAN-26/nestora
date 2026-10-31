@@ -25,14 +25,26 @@ import fs from "node:fs";
 import { build } from "./paytest-build.mjs";
 
 process.env.NODE_ENV = "test";
-process.env.DATABASE_PATH = ".paytest/payments.db";
+// PAYTEST_DATABASE_URL runs this same suite against PostgreSQL. The unit tests
+// drive the real settlement code directly, so they are backend-independent by
+// design — this proves it rather than assuming it.
+const PAYTEST_PG = process.env.PAYTEST_DATABASE_URL || "";
+if (PAYTEST_PG) {
+  process.env.DATABASE_URL = PAYTEST_PG;
+  delete process.env.DATABASE_PATH;
+} else {
+  process.env.DATABASE_PATH = ".paytest/payments.db";
+  delete process.env.DATABASE_URL;
+}
 process.env.RAZORPAY_KEY_ID = "rzp_test_KEYID_for_tests";
 process.env.RAZORPAY_KEY_SECRET = "test_key_secret_do_not_use_in_production";
 process.env.RAZORPAY_WEBHOOK_SECRET = "test_webhook_secret_do_not_use_in_production";
 
-fs.rmSync(".paytest/payments.db", { force: true });
-fs.rmSync(".paytest/payments.db-wal", { force: true });
-fs.rmSync(".paytest/payments.db-shm", { force: true });
+if (!PAYTEST_PG) {
+  fs.rmSync(".paytest/payments.db", { force: true });
+  fs.rmSync(".paytest/payments.db-wal", { force: true });
+  fs.rmSync(".paytest/payments.db-shm", { force: true });
+}
 fs.mkdirSync(".paytest", { recursive: true });
 build();
 
@@ -52,28 +64,28 @@ function check(ok, label, detail = "") {
 
 /* ------------------------------------------------------------------ fixtures */
 let seq = 0;
-function makeBooking({ daily = 1200, deposit = 3000, days = 2, units = 1 } = {}) {
+async function makeBooking({ daily = 1200, deposit = 3000, days = 2, units = 1 } = {}) {
   seq += 1;
   const now = new Date().toISOString();
-  const u = DB.run(
+  const u = await DB.run(
     `INSERT INTO users (email, password_hash, full_name, account_type, city, state, role, active_mode, created_at)
      VALUES (?,?,?,?,?,?,?,?,?)`,
     `pay-${seq}@example.test`, "x", `Payer ${seq}`, "individual", "Chennai", "Tamil Nadu", "user", "buyer", now
   );
   const buyerId = Number(u.lastInsertRowid);
-  const pu = DB.run(
+  const pu = await DB.run(
     `INSERT INTO users (email, password_hash, full_name, account_type, city, state, role, active_mode, created_at)
      VALUES (?,?,?,?,?,?,?,?,?)`,
     `pay-prov-${seq}@example.test`, "x", `Provider ${seq}`, "college_university", "Chennai", "Tamil Nadu", "user", "provider", now
   );
   const providerUserId = Number(pu.lastInsertRowid);
-  const pr = DB.run(
+  const pr = await DB.run(
     `INSERT INTO provider_profiles (user_id, storefront_slug, display_name, org_type, verification_status, is_demo, priority_policy)
      VALUES (?,?,?,?,?,?,?)`,
     providerUserId, `prov-${seq}`, `Provider ${seq}`, "college_university", "verified", 0, "{}"
   );
   const providerId = Number(pr.lastInsertRowid);
-  const r = DB.run(
+  const r = await DB.run(
     `INSERT INTO resources (provider_id, title, category, description, condition, quantity_total, quantity_active,
        location_city, location_state, price_hourly, price_daily, price_weekly, deposit, status, approval_mode, is_demo, created_at)
      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
@@ -88,7 +100,7 @@ function makeBooking({ daily = 1200, deposit = 3000, days = 2, units = 1 } = {})
     { days, units, basis: "daily", subtotal: daily * days * units, fees: Math.round(daily * days * units * 0.02 * 100) / 100, deposit: deposit * units, total: 0 },
   );
   quote.total = Math.round((quote.subtotal + quote.fees + quote.deposit) * 100) / 100;
-  const b = DB.run(
+  const b = await DB.run(
     `INSERT INTO bookings (code, resource_id, buyer_id, provider_id, start_date, end_date, days, units, rate_basis,
         subtotal, deposit, fees, total, status, price_snapshot, price_pinned_at, created_at, updated_at)
      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
@@ -102,8 +114,8 @@ function makeBooking({ daily = 1200, deposit = 3000, days = 2, units = 1 } = {})
   };
 }
 
-function makeOrder(booking, { orderId = `order_TEST${Math.random().toString(36).slice(2, 10)}`, amount } = {}) {
-  const paymentRowId = P.recordPayment({
+async function makeOrder(booking, { orderId = `order_TEST${Math.random().toString(36).slice(2, 10)}`, amount } = {}) {
+  const paymentRowId = await P.recordPayment({
     bookingId: booking.bookingId, kind: "rental", amount: amount ?? booking.total,
     mode: "razorpay", status: "created", providerOrderId: orderId,
   });
@@ -115,9 +127,9 @@ const sign = (orderId, paymentId) =>
 const webhookSign = (raw) =>
   crypto.createHmac("sha256", process.env.RAZORPAY_WEBHOOK_SECRET).update(raw).digest("hex");
 
-const rows = (sql, ...a) => DB.all(sql, ...a);
-const bookingStatus = (id) => DB.one(`SELECT status FROM bookings WHERE id = ?`, id)?.status;
-const paidRows = (id) => rows(`SELECT * FROM payments WHERE booking_id = ? AND status='paid'`, id);
+const rows = async (sql, ...a) => DB.all(sql, ...a);
+const bookingStatus = async (id) => (await DB.one(`SELECT status FROM bookings WHERE id = ?`, id))?.status;
+const paidRows = async (id) => rows(`SELECT * FROM payments WHERE booking_id = ? AND status='paid'`, id);
 
 /* =========================================================== 1. signatures */
 group("1. Signature verification");
@@ -139,20 +151,20 @@ group("1. Signature verification");
 group("2. Correct captured payment (webhook authority)");
 const capturedFlow = {};
 {
-  const b = makeBooking();
-  const { orderId } = makeOrder(b);
+  const b = await makeBooking();
+  const { orderId } = await makeOrder(b);
   capturedFlow.booking = b; capturedFlow.orderId = orderId;
 
-  const res = P.settleCapturedPayment({
+  const res = await P.settleCapturedPayment({
     bookingId: b.bookingId, orderId, paymentId: "pay_CAPTURED1",
     amountPaise: P.toPaise(b.total), currency: "INR", source: "webhook",
   });
   check(res.ok === true, "Captured payment settles", res.ok ? "booking → " + res.bookingStatus : res.error);
-  check(bookingStatus(b.bookingId) === "paid", "Booking moved to paid");
-  const paid = paidRows(b.bookingId);
+  check(await bookingStatus(b.bookingId) === "paid", "Booking moved to paid");
+  const paid = await paidRows(b.bookingId);
   check(paid.length === 1 && paid[0].provider_payment_id === "pay_CAPTURED1", "Payment row is paid with the gateway payment id");
   check(paid[0].captured_at != null, "captured_at is recorded (not just paid_at)");
-  const deposit = DB.one(`SELECT * FROM deposits WHERE booking_id = ?`, b.bookingId);
+  const deposit = await DB.one(`SELECT * FROM deposits WHERE booking_id = ?`, b.bookingId);
   check(deposit?.status === "held_demo", "Deposit recorded as a SIMULATED held_demo row");
   check(/not escrow|SIMULATED/i.test(deposit?.note ?? ""), "Deposit note states it is not escrow", (deposit?.note ?? "").slice(0, 48) + "…");
 }
@@ -160,54 +172,57 @@ const capturedFlow = {};
 /* ====================================================== 3. wrong amounts etc */
 group("3. Amount, currency and missing-field validation");
 {
-  const b = makeBooking({ daily: 800, deposit: 1000 });
-  const { orderId } = makeOrder(b);
-  const r1 = P.settleCapturedPayment({ bookingId: b.bookingId, orderId, paymentId: "pay_LOW", amountPaise: P.toPaise(b.total) - 100, currency: "INR", source: "webhook" });
+  const b = await makeBooking({ daily: 800, deposit: 1000 });
+  const { orderId } = await makeOrder(b);
+  const r1 = await P.settleCapturedPayment({ bookingId: b.bookingId, orderId, paymentId: "pay_LOW", amountPaise: P.toPaise(b.total) - 100, currency: "INR", source: "webhook" });
   check(!r1.ok && r1.reason === "gateway_amount_mismatch", "Under-paid amount rejected", r1.ok ? "settled!" : r1.reason);
-  const r2 = P.settleCapturedPayment({ bookingId: b.bookingId, orderId, paymentId: "pay_HIGH", amountPaise: P.toPaise(b.total) + 100, currency: "INR", source: "webhook" });
+  const r2 = await P.settleCapturedPayment({ bookingId: b.bookingId, orderId, paymentId: "pay_HIGH", amountPaise: P.toPaise(b.total) + 100, currency: "INR", source: "webhook" });
   check(!r2.ok && r2.reason === "gateway_amount_mismatch", "Over-paid amount rejected", r2.ok ? "settled!" : r2.reason);
-  const r3 = P.settleCapturedPayment({ bookingId: b.bookingId, orderId, paymentId: "pay_USD", amountPaise: P.toPaise(b.total), currency: "USD", source: "webhook" });
+  const r3 = await P.settleCapturedPayment({ bookingId: b.bookingId, orderId, paymentId: "pay_USD", amountPaise: P.toPaise(b.total), currency: "USD", source: "webhook" });
   check(!r3.ok && r3.reason === "currency_mismatch", "Wrong currency rejected", r3.ok ? "settled!" : r3.reason);
-  check(bookingStatus(b.bookingId) === "approved", "Rejected attempts left the booking untouched", bookingStatus(b.bookingId));
+  check(await bookingStatus(b.bookingId) === "approved", "Rejected attempts left the booking untouched", await bookingStatus(b.bookingId));
 
   // stored order amount tampered (e.g. an order created for a different amount)
-  const b2 = makeBooking({ daily: 500, deposit: 0 });
-  const { orderId: o2 } = makeOrder(b2, { amount: 1 });
-  const r4 = P.settleCapturedPayment({ bookingId: b2.bookingId, orderId: o2, paymentId: "pay_TAMPER", amountPaise: P.toPaise(1), currency: "INR", source: "webhook" });
+  const b2 = await makeBooking({ daily: 500, deposit: 0 });
+  const { orderId: o2 } = await makeOrder(b2, { amount: 1 });
+  const r4 = await P.settleCapturedPayment({ bookingId: b2.bookingId, orderId: o2, paymentId: "pay_TAMPER", amountPaise: P.toPaise(1), currency: "INR", source: "webhook" });
   check(!r4.ok && r4.reason === "order_amount_mismatch", "Stored order amount that no longer matches the booking price is rejected", r4.ok ? "settled!" : r4.reason);
 }
 
 /* ================================================== 4. unknown / cross-order */
 group("4. Unknown orders, foreign bookings, reused payment ids");
 {
-  const b = makeBooking();
-  const r1 = P.settleCapturedPayment({ bookingId: b.bookingId, orderId: "order_DOES_NOT_EXIST", paymentId: "pay_X", amountPaise: P.toPaise(b.total), currency: "INR", source: "checkout" });
+  const b = await makeBooking();
+  const r1 = await P.settleCapturedPayment({ bookingId: b.bookingId, orderId: "order_DOES_NOT_EXIST", paymentId: "pay_X", amountPaise: P.toPaise(b.total), currency: "INR", source: "checkout" });
   check(!r1.ok && r1.reason === "order_not_found", "Unknown order id rejected", r1.ok ? "settled!" : r1.reason);
-  check(paidRows(b.bookingId).length === 0, "No payment record created for an unknown order");
+  check((await paidRows(b.bookingId)).length === 0, "No payment record created for an unknown order");
 
-  const a = makeBooking();
-  const c = makeBooking();
-  const { orderId } = makeOrder(a);
-  const r2 = P.settleCapturedPayment({ bookingId: c.bookingId, orderId, paymentId: "pay_CROSS", amountPaise: P.toPaise(a.total), currency: "INR", source: "checkout" });
+  const a = await makeBooking();
+  const c = await makeBooking();
+  const { orderId } = await makeOrder(a);
+  const r2 = await P.settleCapturedPayment({ bookingId: c.bookingId, orderId, paymentId: "pay_CROSS", amountPaise: P.toPaise(a.total), currency: "INR", source: "checkout" });
   check(!r2.ok && r2.reason === "order_booking_mismatch", "Order belonging to another booking rejected", r2.ok ? "settled!" : r2.reason);
-  check(bookingStatus(c.bookingId) === "approved", "The other booking was NOT marked paid", bookingStatus(c.bookingId));
+  check(await bookingStatus(c.bookingId) === "approved", "The other booking was NOT marked paid", await bookingStatus(c.bookingId));
 
   // reused payment id against a second order
-  const d = makeBooking();
-  const { orderId: o1 } = makeOrder(a);
-  const ok1 = P.settleCapturedPayment({ bookingId: a.bookingId, orderId: o1, paymentId: "pay_SHARED", amountPaise: P.toPaise(a.total), currency: "INR", source: "webhook" });
-  const { orderId: o2 } = makeOrder(d);
-  const r3 = P.settleCapturedPayment({ bookingId: d.bookingId, orderId: o2, paymentId: "pay_SHARED", amountPaise: P.toPaise(d.total), currency: "INR", source: "webhook" });
+  const d = await makeBooking();
+  const { orderId: o1 } = await makeOrder(a);
+  const ok1 = await P.settleCapturedPayment({ bookingId: a.bookingId, orderId: o1, paymentId: "pay_SHARED", amountPaise: P.toPaise(a.total), currency: "INR", source: "webhook" });
+  const { orderId: o2 } = await makeOrder(d);
+  const r3 = await P.settleCapturedPayment({ bookingId: d.bookingId, orderId: o2, paymentId: "pay_SHARED", amountPaise: P.toPaise(d.total), currency: "INR", source: "webhook" });
   check(ok1.ok === true, "First use of a payment id settles");
   check(!r3.ok && r3.reason === "payment_id_reused", "Reusing the same payment id on another order is rejected", r3.ok ? "settled!" : r3.reason);
 
   // database-level guard
   let uniqueBlocked = false;
   try {
-    DB.run(`INSERT INTO payments (booking_id, kind, amount, mode, status, provider_order_id) VALUES (?,?,?,?,?,?)`,
+    await DB.run(`INSERT INTO payments (booking_id, kind, amount, mode, status, provider_order_id) VALUES (?,?,?,?,?,?)`,
       d.bookingId, "rental", 100, "razorpay", "created", o1);
   } catch (e) {
-    uniqueBlocked = /UNIQUE constraint failed/.test(String(e.message));
+    // The constraint is the same on both engines; only the wording differs
+    // ("UNIQUE constraint failed" on SQLite, a 23505 unique_violation on
+    // PostgreSQL). Matching either proves the DB-level guard, not the message.
+    uniqueBlocked = /UNIQUE constraint failed|23505|duplicate key value/i.test(String(e.message));
   }
   check(uniqueBlocked, "UNIQUE index refuses a duplicate gateway order id at the DB level");
 }
@@ -215,124 +230,125 @@ group("4. Unknown orders, foreign bookings, reused payment ids");
 /* ===================================================== 5. idempotency/replay */
 group("5. Repeated webhooks, concurrency and authorized-not-captured");
 {
-  const b = makeBooking();
-  const { orderId } = makeOrder(b);
-  const first = P.settleCapturedPayment({ bookingId: b.bookingId, orderId, paymentId: "pay_REPEAT", amountPaise: P.toPaise(b.total), currency: "INR", source: "webhook" });
-  const second = P.settleCapturedPayment({ bookingId: b.bookingId, orderId, paymentId: "pay_REPEAT", amountPaise: P.toPaise(b.total), currency: "INR", source: "webhook" });
-  const third = P.settleCapturedPayment({ bookingId: b.bookingId, orderId, paymentId: "pay_REPEAT", amountPaise: P.toPaise(b.total), currency: "INR", source: "webhook" });
+  const b = await makeBooking();
+  const { orderId } = await makeOrder(b);
+  const first = await P.settleCapturedPayment({ bookingId: b.bookingId, orderId, paymentId: "pay_REPEAT", amountPaise: P.toPaise(b.total), currency: "INR", source: "webhook" });
+  const second = await P.settleCapturedPayment({ bookingId: b.bookingId, orderId, paymentId: "pay_REPEAT", amountPaise: P.toPaise(b.total), currency: "INR", source: "webhook" });
+  const third = await P.settleCapturedPayment({ bookingId: b.bookingId, orderId, paymentId: "pay_REPEAT", amountPaise: P.toPaise(b.total), currency: "INR", source: "webhook" });
   check(first.ok && !first.idempotent, "First captured webhook settles");
   check(second.ok && second.idempotent, "Repeated captured webhook is idempotent (no double-settle)");
   check(third.ok && third.idempotent, "Third delivery also idempotent");
-  check(paidRows(b.bookingId).length === 1, "Exactly ONE paid row after three deliveries", `${paidRows(b.bookingId).length} rows`);
+  check((await paidRows(b.bookingId)).length === 1, "Exactly ONE paid row after three deliveries", `${(await paidRows(b.bookingId)).length} rows`);
 
   // different payment id on an already-settled order
-  const r = P.settleCapturedPayment({ bookingId: b.bookingId, orderId, paymentId: "pay_DIFFERENT", amountPaise: P.toPaise(b.total), currency: "INR", source: "webhook" });
+  const r = await P.settleCapturedPayment({ bookingId: b.bookingId, orderId, paymentId: "pay_DIFFERENT", amountPaise: P.toPaise(b.total), currency: "INR", source: "webhook" });
   check(!r.ok && r.reason === "order_already_settled", "A second, different payment on the same order is rejected", r.ok ? "settled!" : r.reason);
 
   // authorized ≠ captured
-  const b2 = makeBooking();
-  const { orderId: o2 } = makeOrder(b2);
-  const auth = P.recordAuthorizedPayment(o2, "pay_AUTHONLY");
+  const b2 = await makeBooking();
+  const { orderId: o2 } = await makeOrder(b2);
+  const auth = await P.recordAuthorizedPayment(o2, "pay_AUTHONLY");
   check(auth.ok === true, "Authorized payment is recorded");
-  const row = DB.one(`SELECT status FROM payments WHERE provider_order_id = ?`, o2);
+  const row = await DB.one(`SELECT status FROM payments WHERE provider_order_id = ?`, o2);
+  check(Boolean(row), "Authorized payment row is findable by order id");
   check(row.status === "authorized", "Status is 'authorized', not 'paid'", row.status);
-  check(bookingStatus(b2.bookingId) === "approved", "Booking is NOT paid after authorization only", bookingStatus(b2.bookingId));
-  check(paidRows(b2.bookingId).length === 0, "No paid row exists for an authorized payment");
+  check(await bookingStatus(b2.bookingId) === "approved", "Booking is NOT paid after authorization only", await bookingStatus(b2.bookingId));
+  check((await paidRows(b2.bookingId)).length === 0, "No paid row exists for an authorized payment");
 
   // failed → cannot become paid
-  DB.run(`UPDATE payments SET status='failed' WHERE provider_order_id = ?`, o2);
-  const afterFail = P.settleCapturedPayment({ bookingId: b2.bookingId, orderId: o2, paymentId: "pay_AUTHONLY", amountPaise: P.toPaise(b2.total), currency: "INR", source: "webhook" });
+  await DB.run(`UPDATE payments SET status='failed' WHERE provider_order_id = ?`, o2);
+  const afterFail = await P.settleCapturedPayment({ bookingId: b2.bookingId, orderId: o2, paymentId: "pay_AUTHONLY", amountPaise: P.toPaise(b2.total), currency: "INR", source: "webhook" });
   check(!afterFail.ok && afterFail.reason === "payment_failed", "A failed payment cannot be settled by a later capture event", afterFail.ok ? "settled!" : afterFail.reason);
-  check(bookingStatus(b2.bookingId) === "approved", "Failed payment left the booking unpaid");
+  check(await bookingStatus(b2.bookingId) === "approved", "Failed payment left the booking unpaid");
 
   // refunded → cannot become paid
-  const b3 = makeBooking();
-  const { orderId: o3 } = makeOrder(b3);
-  P.settleCapturedPayment({ bookingId: b3.bookingId, orderId: o3, paymentId: "pay_REFUNDME", amountPaise: P.toPaise(b3.total), currency: "INR", source: "webhook" });
-  DB.run(`UPDATE payments SET status='refunded' WHERE provider_order_id = ?`, o3);
-  const afterRefund = P.settleCapturedPayment({ bookingId: b3.bookingId, orderId: o3, paymentId: "pay_REFUNDME", amountPaise: P.toPaise(b3.total), currency: "INR", source: "webhook" });
+  const b3 = await makeBooking();
+  const { orderId: o3 } = await makeOrder(b3);
+  await P.settleCapturedPayment({ bookingId: b3.bookingId, orderId: o3, paymentId: "pay_REFUNDME", amountPaise: P.toPaise(b3.total), currency: "INR", source: "webhook" });
+  await DB.run(`UPDATE payments SET status='refunded' WHERE provider_order_id = ?`, o3);
+  const afterRefund = await P.settleCapturedPayment({ bookingId: b3.bookingId, orderId: o3, paymentId: "pay_REFUNDME", amountPaise: P.toPaise(b3.total), currency: "INR", source: "webhook" });
   check(!afterRefund.ok && afterRefund.reason === "payment_refunded", "A refunded payment cannot be re-settled", afterRefund.ok ? "settled!" : afterRefund.reason);
 }
 
 /* ============================================== 6. concurrent confirmation */
 group("6. Concurrency: checkout + webhook racing each other");
 {
-  const b = makeBooking();
-  const { orderId } = makeOrder(b);
+  const b = await makeBooking();
+  const { orderId } = await makeOrder(b);
   // Two independent settlement attempts, as if the browser handler and the webhook
   // landed at the same moment. better-sqlite3 is synchronous, so this models the
   // worst case for the same event loop tick: both must be safe individually and
   // together they must produce exactly one paid row.
   const results = [
-    P.settleCapturedPayment({ bookingId: b.bookingId, orderId, paymentId: "pay_RACE", amountPaise: P.toPaise(b.total), currency: "INR", source: "checkout" }),
-    P.settleCapturedPayment({ bookingId: b.bookingId, orderId, paymentId: "pay_RACE", amountPaise: P.toPaise(b.total), currency: "INR", source: "webhook" }),
+    await P.settleCapturedPayment({ bookingId: b.bookingId, orderId, paymentId: "pay_RACE", amountPaise: P.toPaise(b.total), currency: "INR", source: "checkout" }),
+    await P.settleCapturedPayment({ bookingId: b.bookingId, orderId, paymentId: "pay_RACE", amountPaise: P.toPaise(b.total), currency: "INR", source: "webhook" }),
   ];
   check(results.every((r) => r.ok), "Both concurrent attempts succeed");
   check(results.filter((r) => !r.idempotent).length === 1, "Exactly one attempt performed the settlement", `${results.filter((r) => !r.idempotent).length} non-idempotent`);
-  check(paidRows(b.bookingId).length === 1, "Only one paid row exists after the race", `${paidRows(b.bookingId).length} rows`);
+  check((await paidRows(b.bookingId)).length === 1, "Only one paid row exists after the race", `${(await paidRows(b.bookingId)).length} rows`);
 
   // Same order, two DIFFERENT payment ids racing: only one may win.
-  const b2 = makeBooking();
-  const { orderId: o2 } = makeOrder(b2);
+  const b2 = await makeBooking();
+  const { orderId: o2 } = await makeOrder(b2);
   const race = [
-    P.settleCapturedPayment({ bookingId: b2.bookingId, orderId: o2, paymentId: "pay_RACE_A", amountPaise: P.toPaise(b2.total), currency: "INR", source: "checkout" }),
-    P.settleCapturedPayment({ bookingId: b2.bookingId, orderId: o2, paymentId: "pay_RACE_B", amountPaise: P.toPaise(b2.total), currency: "INR", source: "webhook" }),
+    await P.settleCapturedPayment({ bookingId: b2.bookingId, orderId: o2, paymentId: "pay_RACE_A", amountPaise: P.toPaise(b2.total), currency: "INR", source: "checkout" }),
+    await P.settleCapturedPayment({ bookingId: b2.bookingId, orderId: o2, paymentId: "pay_RACE_B", amountPaise: P.toPaise(b2.total), currency: "INR", source: "webhook" }),
   ];
   check(race[0].ok && !race[1].ok && race[1].reason === "order_already_settled", "Different payment ids on one order: exactly one wins", race[1].ok ? "both settled!" : race[1].reason);
-  check(paidRows(b2.bookingId).length === 1, "Only one paid row after the two-id race");
+  check((await paidRows(b2.bookingId)).length === 1, "Only one paid row after the two-id race");
 }
 
 /* ================================================= 7. immutable price lock */
 group("7. Booking price is locked (provider cannot re-price an existing booking)");
 {
-  const b = makeBooking({ daily: 1000, deposit: 2000, days: 2 });
-  const { orderId } = makeOrder(b);
-  const before = P.bookingPrice(b.bookingId);
+  const b = await makeBooking({ daily: 1000, deposit: 2000, days: 2 });
+  const { orderId } = await makeOrder(b);
+  const before = await P.bookingPrice(b.bookingId);
   check(before.amountRupees === b.total, "Order amount equals the booking's snapshot total", `${before.amountRupees}`);
 
   // The provider now doubles their prices.
-  DB.run(`UPDATE resources SET price_daily = price_daily * 2, deposit = deposit * 2 WHERE id = ?`, b.resourceId);
-  const after = P.bookingPrice(b.bookingId);
+  await DB.run(`UPDATE resources SET price_daily = price_daily * 2, deposit = deposit * 2 WHERE id = ?`, b.resourceId);
+  const after = await P.bookingPrice(b.bookingId);
   check(after.amountRupees === before.amountRupees, "Booking total is unchanged after a provider price change", `${before.amountRupees} → ${after.amountRupees}`);
 
-  const res = P.settleCapturedPayment({ bookingId: b.bookingId, orderId, paymentId: "pay_LOCKED", amountPaise: before.amountPaise, currency: "INR", source: "webhook" });
+  const res = await P.settleCapturedPayment({ bookingId: b.bookingId, orderId, paymentId: "pay_LOCKED", amountPaise: before.amountPaise, currency: "INR", source: "webhook" });
   check(res.ok === true, "Payment at the locked price still settles after the price change", res.ok ? "paid" : res.error);
 
   // a brand-new booking on the same resource picks up the NEW price, as it should
-  const fresh = makeBooking({ daily: 1000, deposit: 2000, days: 2 });
+  const fresh = await makeBooking({ daily: 1000, deposit: 2000, days: 2 });
   check(fresh.total > 0, "New bookings are priced independently", `${fresh.total}`);
 }
 
 /* =============================================== 8. legacy rows & migration */
 group("8. Legacy bookings without a snapshot");
 {
-  const b = makeBooking();
-  DB.run(`UPDATE bookings SET price_snapshot = NULL WHERE id = ?`, b.bookingId);
-  const price = P.bookingPrice(b.bookingId);
+  const b = await makeBooking();
+  await DB.run(`UPDATE bookings SET price_snapshot = NULL WHERE id = ?`, b.bookingId);
+  const price = await P.bookingPrice(b.bookingId);
   check(price !== null && price.amountRupees === b.total, "Legacy booking priced from its own columns", `${price?.amountRupees}`);
-  const pinned = DB.one(`SELECT price_snapshot FROM bookings WHERE id = ?`, b.bookingId);
+  const pinned = await DB.one(`SELECT price_snapshot FROM bookings WHERE id = ?`, b.bookingId);
   check(Boolean(pinned.price_snapshot), "Snapshot is pinned on first read, not left null");
-  const { orderId } = makeOrder(b);
-  const res = P.settleCapturedPayment({ bookingId: b.bookingId, orderId, paymentId: "pay_LEGACY", amountPaise: price.amountPaise, currency: "INR", source: "webhook" });
+  const { orderId } = await makeOrder(b);
+  const res = await P.settleCapturedPayment({ bookingId: b.bookingId, orderId, paymentId: "pay_LEGACY", amountPaise: price.amountPaise, currency: "INR", source: "webhook" });
   check(res.ok === true, "Legacy booking settles at its stored amount", res.ok ? "paid" : res.error);
 }
 
 /* ============================================================ 9. demo mode */
 group("9. Demo payments never touch the gateway");
 {
-  const b = makeBooking();
-  const demoId = P.recordPayment({
+  const b = await makeBooking();
+  const demoId = await P.recordPayment({
     bookingId: b.bookingId, kind: "rental", amount: b.total, mode: "demo", status: "paid",
     meta: { label: "DEMO PAYMENT — simulated, no money transferred, no gateway involved", simulated_only: true },
   });
-  const row = DB.one(`SELECT * FROM payments WHERE id = ?`, demoId);
+  const row = await DB.one(`SELECT * FROM payments WHERE id = ?`, demoId);
   check(row.mode === "demo", "Demo row is tagged mode='demo'");
   check(row.provider_order_id === null && row.provider_payment_id === null, "Demo row carries no gateway ids");
   check(row.kind === "rental", "Demo row keeps its own kind (cannot be confused with a gateway transaction)");
-  const mix = DB.one(`SELECT COUNT(*) AS c FROM payments WHERE booking_id = ? AND mode='razorpay'`, b.bookingId);
+  const mix = await DB.one(`SELECT COUNT(*) AS c FROM payments WHERE booking_id = ? AND mode='razorpay'`, b.bookingId);
   check(mix.c === 0, "No gateway rows were created for the demo payment");
   // a demo row cannot be settled by a webhook even if someone invents an order id
-  const r = P.settleCapturedPayment({ bookingId: b.bookingId, orderId: `demo-${demoId}`, paymentId: "pay_FAKE", amountPaise: P.toPaise(b.total), currency: "INR", source: "webhook" });
+  const r = await P.settleCapturedPayment({ bookingId: b.bookingId, orderId: `demo-${demoId}`, paymentId: "pay_FAKE", amountPaise: P.toPaise(b.total), currency: "INR", source: "webhook" });
   check(!r.ok && r.reason === "order_not_found", "A demo record cannot be settled as a gateway payment", r.ok ? "settled!" : r.reason);
 }
 

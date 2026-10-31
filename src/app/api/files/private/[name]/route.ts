@@ -1,5 +1,5 @@
-import fs from "node:fs";
-import { resolveFile, mimeFor } from "@/lib/uploads";
+import { mimeFor } from "@/lib/uploads";
+import { getFile } from "@/lib/storage";
 import { getSessionUser } from "@/lib/auth";
 import { one } from "@/lib/db";
 import { audit } from "@/lib/audit";
@@ -14,8 +14,6 @@ export async function GET(_req: Request, ctx: { params: Promise<{ name: string }
   const user = await getSessionUser();
   if (!user) return new Response("Authentication required", { status: 401 });
   const { name } = await ctx.params;
-  const file = resolveFile("private", name);
-  if (!file) return new Response("Not found", { status: 404 });
   const url = `/api/files/private/${name}`;
 
   let allowed = user.role === "admin";
@@ -52,7 +50,11 @@ export async function GET(_req: Request, ctx: { params: Promise<{ name: string }
   }
 
   await audit({ actorId: user.id, actorEmail: user.email, action: "document.access", entity: "file", entityId: name });
-  const buf = fs.readFileSync(file);
+  // Bytes come from the storage layer (local disk or private object storage).
+  // The authorisation check above is what protects them; the object itself is
+  // never exposed as a public URL.
+  const buf = await getFile("private", name);
+  if (!buf) return new Response("Not found", { status: 404 });
   return new Response(new Uint8Array(buf), {
     headers: {
       "content-type": mimeFor(name),

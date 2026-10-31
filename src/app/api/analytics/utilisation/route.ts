@@ -15,9 +15,14 @@ export const GET = guard(async (req: Request) => {
   if (!user.provider && user.role !== "admin") return fail("Provider profile required", 403);
 
   const url = new URL(req.url);
-  const providerId = user.role === "admin" && url.searchParams.get("providerId")
-    ? Number(url.searchParams.get("providerId"))
-    : user.provider!.id;
+  const requested = url.searchParams.get("providerId");
+  // An admin may have no provider profile of their own, so a missing providerId
+  // is a client error — not a null dereference.
+  if (user.role === "admin" && !requested) {
+    return fail("providerId is required for admin requests", 400);
+  }
+  const providerId = user.role === "admin" ? Number(requested) : user.provider!.id;
+  if (!Number.isInteger(providerId) || providerId <= 0) return fail("Invalid providerId", 400);
 
   if (user.role !== "admin" && user.provider!.id !== providerId) return fail("Forbidden", 403);
 
