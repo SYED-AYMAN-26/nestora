@@ -60,7 +60,7 @@ export default async function UtilisationPage() {
         <Card className="p-4">
           <h2 className="mb-3 text-[14px] font-semibold text-ink">Listings by utilisation</h2>
           {items.length === 0 ? (
-            <EmptyState title="No listings to analyse" body="Create a listing first." action={<Link href="/provider/new" className="rounded-lg bg-electric px-3 py-1.5 text-[12px] font-medium text-navy-950">Create listing</Link>} />
+            <EmptyState title="No listings to analyse" body="Create a listing first." action={<Link href="/provider/new" className="rounded-lg bg-electric px-3 py-1.5 text-[12px] font-medium text-white">Create listing</Link>} />
           ) : (
             <ul className="space-y-3">
               {items.map((r) => (

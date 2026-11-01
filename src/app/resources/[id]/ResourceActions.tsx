@@ -77,7 +77,7 @@ export function ReportButton({ resourceId, authed }: { resourceId: number; authe
                 <option value="other">Other</option>
               </select>
               <textarea value={detail} onChange={(e) => setDetail(e.target.value)} placeholder="What should we check?" className="mb-2 w-full rounded-lg border border-white/12 bg-navy-900 px-2 py-1.5 text-[12.5px] text-ink" rows={3} />
-              <button type="button" onClick={submit} disabled={busy} className="w-full rounded-lg bg-gradient-to-b from-electric to-electric-deep py-1.5 text-[12.5px] font-semibold text-navy-950">
+              <button type="button" onClick={submit} disabled={busy} className="w-full rounded-lg bg-gradient-to-b from-electric to-electric-deep py-1.5 text-[12.5px] font-semibold text-white">
                 {busy ? "Sending…" : "Submit report"}
               </button>
             </>

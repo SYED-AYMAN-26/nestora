@@ -72,7 +72,7 @@ export default function HelpPage() {
             ))}
           </tbody>
         </table>
-        <Link href="/login" className="mt-3 inline-block rounded-lg bg-gradient-to-b from-electric to-electric-deep px-3.5 py-2 text-[13px] font-semibold text-navy-950">
+        <Link href="/login" className="mt-3 inline-block rounded-lg bg-gradient-to-b from-electric to-electric-deep px-3.5 py-2 text-[13px] font-semibold text-white">
           Open sign-in (with quick-fill buttons)
         </Link>
       </Card>
@@ -83,7 +83,7 @@ export default function HelpPage() {
           <li><strong className="text-emerald-300">Working:</strong> accounts, sessions, roles, storefronts, listings, search & filters, availability engine, booking lifecycle, handover, returns, extensions, waiting list, disputes, reviews, utilisation, impact metrics, audit log.</li>
           <li><strong className="text-amber-300">Demo mode:</strong> payments. Without Razorpay keys no money moves; records are labelled demo. With keys, real test orders + server-side signature verification.</li>
           <li><strong className="text-amber-300">Optional:</strong> AI intent parsing (falls back to the transparent rule-based engine), email &amp; WhatsApp delivery (in-app always works).</li>
-          <li><strong className="text-amber-300">Illustrative:</strong> 3D models are interactive procedural meshes, not manufacturer CAD. Listings without a model say so.</li>
+          <li><strong className="text-amber-300">Illustrative:</strong> seeded demo listings use a category photograph when the provider has not uploaded their own photo. Uploaded photos always take priority.</li>
           <li><strong className="text-rose-300">Not implemented:</strong> real escrow, card storage, KYC automation, automated dispute adjudication.</li>
         </ul>
       </Card>

@@ -8,7 +8,7 @@ import Link from "next/link";
 const TAGLINE = "Discover Your Space. Experience It in 3D.";
 const DESCRIPTION =
   "Nestora is a property-tech platform where colleges, companies and communities list unused spaces and equipment, " +
-  "and everyone else discovers, explores in 3D and books them.";
+  "and everyone else discovers, compares and books them — with verified providers and condition records at handover.";
 
 export const metadata: Metadata = {
   // Template keeps every page's <title> on-brand without touching each file.
@@ -40,7 +40,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#06121f",
+  themeColor: "#ffffff",
   width: "device-width",
   initialScale: 1,
 };
@@ -72,12 +72,12 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   return (
     <html lang="en">
       <body className="min-h-screen antialiased">
-        <a href="#main" className="sr-only focus:not-sr-only focus:absolute focus:left-3 focus:top-3 focus:z-[60] focus:rounded-lg focus:bg-electric focus:px-3 focus:py-2 focus:text-navy-950">
+        <a href="#main" className="sr-only focus:not-sr-only focus:absolute focus:left-3 focus:top-3 focus:z-[60] focus:rounded-lg focus:bg-electric focus:px-3 focus:py-2 focus:text-white">
           Skip to content
         </a>
         <TopNav user={navUser} />
         <main id="main">{children}</main>
-        <footer className="mt-20 border-t border-white/8 bg-navy-950/60">
+        <footer className="mt-16 border-t border-white/10 bg-navy-900">
           <div className="mx-auto grid max-w-7xl gap-8 px-4 py-10 sm:px-6 md:grid-cols-4">
             <div>
               <div className="flex items-center gap-2">
@@ -87,7 +87,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               </div>
               <p className="mt-2 max-w-xs text-[12px] font-medium leading-relaxed text-ink-dim">{TAGLINE}</p>
               <p className="mt-1.5 max-w-xs text-[12px] leading-relaxed text-ink-faint">
-                List unused spaces and equipment. Discover what you need. Explore it in 3D.
+                List unused spaces and equipment. Discover what you need. Book it with a verified provider.
               </p>
             </div>
             <div>
@@ -116,7 +116,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               </p>
             </div>
           </div>
-          <div className="border-t border-white/6 px-4 py-4 text-center text-[11px] text-ink-faint sm:px-6">
+          <div className="border-t border-white/10 px-4 py-4 text-center text-[11px] text-ink-faint sm:px-6">
             Nestora · {TAGLINE} · <Link href="/verification-report" className="underline decoration-dotted hover:text-electric">build &amp; feature verification report</Link>
           </div>
         </footer>

@@ -36,7 +36,7 @@ export function ImpactFilters({ categories, initial }: { categories: { value: st
           {categories.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
         </select>
       </div>
-      <button type="button" onClick={apply} className="rounded-lg bg-gradient-to-b from-electric to-electric-deep px-3 py-1.5 text-[12.5px] font-semibold text-navy-950">Apply</button>
+      <button type="button" onClick={apply} className="rounded-lg bg-gradient-to-b from-electric to-electric-deep px-3 py-1.5 text-[12.5px] font-semibold text-white">Apply</button>
       <button type="button" onClick={() => { setFrom(""); setTo(""); setCategory("all"); router.push("/impact"); }} className="rounded-lg border border-white/14 px-3 py-1.5 text-[12.5px] text-ink-dim hover:text-ink">Reset</button>
     </div>
   );

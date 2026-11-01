@@ -20,7 +20,7 @@ export default async function ProviderLayout({ children }: { children: React.Rea
 
   return (
     <div>
-      <div className="border-b border-white/8 bg-navy-950/50">
+      <div className="border-b border-white/8 bg-navy-900">
         <div className="mx-auto max-w-7xl px-4 sm:px-6">
           <div className="flex flex-wrap items-center justify-between gap-3 py-3">
             <div className="flex min-w-0 items-center gap-2.5">
@@ -37,7 +37,7 @@ export default async function ProviderLayout({ children }: { children: React.Rea
                 </div>
               </div>
             </div>
-            <Link href="/provider/new" className="rounded-lg bg-gradient-to-b from-electric to-electric-deep px-3.5 py-2 text-[12.5px] font-semibold text-navy-950">
+            <Link href="/provider/new" className="rounded-lg bg-gradient-to-b from-electric to-electric-deep px-3.5 py-2 text-[12.5px] font-semibold text-white">
               + New listing
             </Link>
           </div>

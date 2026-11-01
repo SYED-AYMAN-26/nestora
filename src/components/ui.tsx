@@ -3,15 +3,16 @@ import type { ReactNode } from "react";
 
 type Tone = "verified" | "pending" | "rejected" | "neutral" | "info" | "warn" | "danger" | "success";
 
+// Light-theme badge tones: tinted surface + 700-weight text, all AA on white.
 const TONES: Record<Tone, string> = {
-  verified: "bg-emerald-400/12 text-emerald-300 border-emerald-400/35",
-  success: "bg-emerald-400/12 text-emerald-300 border-emerald-400/35",
-  pending: "bg-amber-400/12 text-amber-300 border-amber-400/35",
-  warn: "bg-amber-400/12 text-amber-300 border-amber-400/35",
-  rejected: "bg-rose-400/12 text-rose-300 border-rose-400/35",
-  danger: "bg-rose-400/12 text-rose-300 border-rose-400/35",
-  info: "bg-sky-400/12 text-sky-300 border-sky-400/35",
-  neutral: "bg-white/6 text-ink-dim border-white/14",
+  verified: "bg-emerald-50 text-emerald-700 border-emerald-200",
+  success: "bg-emerald-50 text-emerald-700 border-emerald-200",
+  pending: "bg-amber-50 text-amber-700 border-amber-200",
+  warn: "bg-amber-50 text-amber-700 border-amber-200",
+  rejected: "bg-rose-50 text-rose-700 border-rose-200",
+  danger: "bg-rose-50 text-rose-700 border-rose-200",
+  info: "bg-sky-50 text-sky-700 border-sky-200",
+  neutral: "bg-navy-850 text-ink-dim border-white/14",
 };
 
 export function Badge({ children, tone = "neutral", className = "" }: { children: ReactNode; tone?: Tone; className?: string }) {
@@ -59,7 +60,7 @@ export function DemoTag({ label = "DEMO" }: { label?: string }) {
   return (
     <span
       title="This record is fictional demonstration data seeded for the hackathon demo."
-      className="inline-flex items-center gap-1 rounded-md border border-fuchsia-400/35 bg-fuchsia-400/12 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-fuchsia-300"
+      className="inline-flex items-center gap-1 rounded-md border border-fuchsia-200 bg-fuchsia-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-fuchsia-700"
     >
       {label}
     </span>
@@ -100,7 +101,7 @@ export { money } from "@/lib/format";
 export function EmptyState({ title, body, action, icon = "◇" }: { title: string; body?: string; action?: ReactNode; icon?: string }) {
   return (
     <div className="glass-soft flex flex-col items-center rounded-2xl px-6 py-12 text-center">
-      <div className="mb-3 grid h-12 w-12 place-items-center rounded-xl border border-white/10 bg-white/5 text-xl text-electric">{icon}</div>
+      <div className="mb-3 grid h-12 w-12 place-items-center rounded-xl border border-white/12 bg-navy-850 text-xl text-electric">{icon}</div>
       <p className="text-sm font-semibold text-ink">{title}</p>
       {body && <p className="mt-1.5 max-w-md text-xs leading-relaxed text-ink-dim">{body}</p>}
       {action && <div className="mt-4">{action}</div>}
@@ -111,7 +112,7 @@ export function EmptyState({ title, body, action, icon = "◇" }: { title: strin
 export function Progress({ value, className = "", tone = "electric" }: { value: number; className?: string; tone?: "electric" | "mint" | "amber" | "rose" }) {
   const bg = { electric: "bg-electric", mint: "bg-emerald-400", amber: "bg-amber-400", rose: "bg-rose-400" }[tone];
   return (
-    <div className={`h-1.5 w-full overflow-hidden rounded-full bg-white/8 ${className}`}>
+    <div className={`h-1.5 w-full overflow-hidden rounded-full bg-navy-800 ${className}`}>
       <div className={`h-full rounded-full ${bg}`} style={{ width: `${Math.max(0, Math.min(100, value))}%` }} />
     </div>
   );
@@ -119,9 +120,9 @@ export function Progress({ value, className = "", tone = "electric" }: { value: 
 
 export function InfoNote({ children, tone = "info", title }: { children: ReactNode; tone?: "info" | "warn" | "danger"; title?: string }) {
   const styles = {
-    info: "border-sky-400/25 bg-sky-400/8 text-sky-100",
-    warn: "border-amber-400/25 bg-amber-400/8 text-amber-100",
-    danger: "border-rose-400/25 bg-rose-400/8 text-rose-100",
+    info: "border-sky-200 bg-sky-50 text-sky-900",
+    warn: "border-amber-200 bg-amber-50 text-amber-900",
+    danger: "border-rose-200 bg-rose-50 text-rose-900",
   }[tone];
   return (
     <div className={`rounded-xl border px-3.5 py-3 text-[12.5px] leading-relaxed ${styles}`}>
@@ -151,7 +152,7 @@ export function Stars({ rating, count, size = "sm" }: { rating: number; count?: 
   const full = Math.round(rating);
   return (
     <span className={`inline-flex items-center gap-1 ${size === "sm" ? "text-[12px]" : "text-sm"}`}>
-      <span className="text-amber-300" aria-hidden="true">
+      <span className="text-amber-500" aria-hidden="true">
         {"★".repeat(full)}<span className="text-white/20">{"★".repeat(5 - full)}</span>
       </span>
       <span className="text-ink-faint" aria-label={`${rating} out of 5`}>
@@ -173,9 +174,9 @@ export function btnClass(variant: "primary" | "ghost" | "outline" | "danger" | "
     case "primary":
       return `${base} bg-gradient-to-b from-electric to-electric-deep text-[#04121f] shadow-[0_10px_30px_-12px_rgba(56,189,248,0.85)] hover:brightness-110`;
     case "outline":
-      return `${base} border border-white/16 bg-white/4 text-ink hover:border-electric/45 hover:bg-white/8`;
+      return `${base} border border-white/16 bg-white text-ink hover:border-electric/45 hover:bg-navy-850`;
     case "ghost":
-      return `${base} text-ink-dim hover:bg-white/6 hover:text-ink`;
+      return `${base} text-ink-dim hover:bg-navy-850 hover:text-ink`;
     case "danger":
       return `${base} border border-rose-400/35 bg-rose-400/12 text-rose-200 hover:bg-rose-400/20`;
     case "success":

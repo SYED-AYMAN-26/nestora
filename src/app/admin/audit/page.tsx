@@ -19,7 +19,7 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
       <form action="/admin/audit" className="mb-4 flex flex-wrap gap-2">
         <input name="entity" defaultValue={sp.entity ?? ""} placeholder="Entity (booking, dispute, resource…)" className="rounded-lg border border-white/12 bg-navy-900/70 px-3 py-1.5 text-[12.5px] text-ink outline-none focus:border-electric/50" />
         <input name="action" defaultValue={sp.action ?? ""} placeholder="Action contains…" className="rounded-lg border border-white/12 bg-navy-900/70 px-3 py-1.5 text-[12.5px] text-ink outline-none focus:border-electric/50" />
-        <button type="submit" className="rounded-lg bg-gradient-to-b from-electric to-electric-deep px-3 py-1.5 text-[12.5px] font-semibold text-navy-950">Filter</button>
+        <button type="submit" className="rounded-lg bg-gradient-to-b from-electric to-electric-deep px-3 py-1.5 text-[12.5px] font-semibold text-white">Filter</button>
         <Link href="/admin/audit" className="rounded-lg border border-white/14 px-3 py-1.5 text-[12.5px] text-ink-dim hover:text-ink">Reset</Link>
       </form>
 

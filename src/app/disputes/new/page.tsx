@@ -72,7 +72,7 @@ async function ChooseBooking({ userId, providerId }: { userId: number; providerI
           <EmptyState
             title="No eligible rentals"
             body="You can open a dispute on a paid, active or completed rental. Nothing on your account qualifies yet."
-            action={<Link href="/bookings" className="rounded-lg bg-electric px-3 py-1.5 text-[12.5px] font-medium text-navy-950">My bookings</Link>}
+            action={<Link href="/bookings" className="rounded-lg bg-electric px-3 py-1.5 text-[12.5px] font-medium text-white">My bookings</Link>}
           />
         ) : (
           <Card className="p-3">

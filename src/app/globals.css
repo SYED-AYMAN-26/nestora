@@ -141,3 +141,138 @@ body {
   position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
   overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border-width: 0;
 }
+
+/* ============================================================================
+   Nestora 2D — light theme
+   The dark palette above is kept as the base scale (component markup uses the
+   navy/ink tokens), and every token is remapped here to the light marketplace
+   theme: white surfaces, navy text, teal/emerald accents. Component class names
+   stay unchanged, so no page markup had to be rewritten just for colour.
+   ========================================================================== */
+@theme {
+  --color-navy-950: #ffffff;
+  --color-navy-900: #f7fafc;
+  --color-navy-850: #f1f6fa;
+  --color-navy-800: #e8f0f7;
+  --color-navy-700: #d7e4ef;
+  --color-charcoal: #0b1622;
+  --color-ink: #0c1b2a;
+  --color-ink-dim: #45607a;
+  --color-ink-faint: #6b8299;
+  --color-cyan: #0fb5a6;
+  --color-electric: #0f766e;
+  --color-electric-deep: #115e59;
+  --color-mint: #059669;
+  --color-amber: #b45309;
+  --color-rose: #be123c;
+}
+
+:root {
+  color-scheme: light;
+  --surface: #ffffff;
+  --surface-2: #f7fafc;
+  --hairline: #e2eaf1;
+  --accent: #0f766e;      /* teal-700 */
+  --accent-2: #059669;    /* emerald-600 */
+  --navy: #0c1b2a;
+}
+
+body {
+  background:
+    radial-gradient(900px 520px at 88% -10%, rgba(15, 118, 110, 0.07), transparent 62%),
+    radial-gradient(760px 420px at 4% 0%, rgba(5, 150, 105, 0.05), transparent 64%),
+    #ffffff;
+  background-attachment: fixed;
+  color: var(--color-ink);
+}
+
+::selection { background: rgba(15, 118, 110, 0.16); }
+
+.glass {
+  background: #ffffff;
+  border: 1px solid var(--hairline);
+  backdrop-filter: none;
+  box-shadow: 0 1px 2px rgba(12, 27, 42, 0.04), 0 12px 28px -18px rgba(12, 27, 42, 0.28);
+}
+.glass-soft {
+  background: var(--surface-2);
+  border: 1px solid var(--hairline);
+  backdrop-filter: none;
+}
+.hairline { border-color: var(--hairline); }
+
+.gradient-text {
+  background: linear-gradient(100deg, #0c1b2a 6%, #0f766e 58%, #059669 94%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.grid-fade {
+  background-image:
+    linear-gradient(rgba(12, 27, 42, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(12, 27, 42, 0.045) 1px, transparent 1px);
+}
+
+/* 2D hover lift — no perspective/tilt layers */
+.card-3d { transform-style: flat; will-change: auto; }
+@media (hover: hover) {
+  .card-3d:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 18px 40px -22px rgba(12, 27, 42, 0.35), 0 0 0 1px rgba(15, 118, 110, 0.22);
+    border-color: rgba(15, 118, 110, 0.38);
+  }
+  .card-3d:hover .card-3d-lift { transform: none; }
+}
+
+.skeleton { background: #eef3f8; }
+.skeleton::after { background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.75), transparent); }
+
+::-webkit-scrollbar-track { background: #f1f6fa; }
+::-webkit-scrollbar-thumb { background: #c9d8e4; }
+::-webkit-scrollbar-thumb:hover { background: #a9c0d2; }
+
+/* --- light-theme compatibility for the dark-era utility mix ------------------
+   Page markup written for the dark theme mixes translucent-white surfaces
+   (bg-white/6, border-white/12) with the navy/ink tokens. On white those read
+   as invisible or as glass shards, so the same utilities are re-mapped here to
+   navy-tinted equivalents. One place to change, no markup churn.            */
+@layer utilities {
+  .bg-white\/2  { background-color: rgba(12, 27, 42, 0.015); }
+  .bg-white\/3  { background-color: rgba(12, 27, 42, 0.025); }
+  .bg-white\/4  { background-color: rgba(12, 27, 42, 0.03); }
+  .bg-white\/5  { background-color: rgba(12, 27, 42, 0.035); }
+  .bg-white\/6  { background-color: rgba(12, 27, 42, 0.045); }
+  .bg-white\/8  { background-color: rgba(12, 27, 42, 0.055); }
+  .bg-white\/10 { background-color: rgba(12, 27, 42, 0.07); }
+  .border-white\/6  { border-color: #e8eff5; }
+  .border-white\/8  { border-color: #e2eaf1; }
+  .border-white\/10 { border-color: #dce6ee; }
+  .border-white\/12 { border-color: #d7e4ef; }
+  .border-white\/14 { border-color: #d2e0ed; }
+  .border-white\/15 { border-color: #d0dfec; }
+  .border-white\/16 { border-color: #cddcea; }
+  .border-white\/20 { border-color: #c6d7e6; }
+  .border-white\/25 { border-color: #bccfdf; }
+  .border-white\/30 { border-color: #b2c8da; }
+  .divide-white\/8 > :not([hidden]) ~ :not([hidden]) { border-color: #e2eaf1; }
+  .text-white\/20 { color: #aab9c7; } /* empty 5th star / decorative glyphs */
+}
+
+/* Accent text that was tuned for a dark background needs a darker tone now
+   that surfaces are white: the 200/300 tints fail contrast on white. */
+@layer utilities {
+  .text-emerald-200, .text-emerald-300 { color: #047857; }
+  .text-amber-200, .text-amber-300 { color: #a16207; }
+  .text-rose-200, .text-rose-300 { color: #be123c; }
+  .text-sky-200, .text-sky-300 { color: #0369a1; }
+  .text-cyan-200, .text-cyan-300 { color: #0e7490; }
+  .text-fuchsia-200, .text-fuchsia-300 { color: #a21caf; }
+  .text-indigo-200, .text-indigo-300 { color: #4338ca; }
+  .text-violet-200, .text-violet-300 { color: #6d28d9; }
+  .text-slate-200, .text-slate-300 { color: #334155; }
+  .text-ink\/70 { color: #3c556d; }
+}
+
+/* Card headings on the light theme read as a marketplace, not a terminal. */
+.glass h1, .glass h2, .glass h3 { letter-spacing: -0.01em; }

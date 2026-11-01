@@ -7,7 +7,8 @@ community organisations and individuals list equipment and spaces they already o
 aren't fully using, and other verified people rent them — with a full booking lifecycle,
 condition handover, deposits, disputes and impact analytics.
 
-Built with Next.js 15 (App Router) + TypeScript + Tailwind v4 + SQLite/PostgreSQL + three.js.
+Built with Next.js 15 (App Router) + TypeScript + Tailwind v4 + SQLite/PostgreSQL. The interface is
+fully 2D — photographic, no WebGL and no 3D runtime.
 
 > **Renamed from "RentLink 3D" to "Nestora".** Only the user-facing brand changed.
 > Technical identifiers — the `rl_session` cookie, `data/rentlink.db`, the
@@ -64,10 +65,10 @@ With the server running:
 
 ```bash
 npm run verify:full           # EVERYTHING: tsc, eslint, build, payment unit +
-                              # integration, e2e, 3D, links  (~6 min, self-contained)
-npm test                      # e2e only: 166 functional checks
+                              # integration, e2e, 2D UI, links  (~6 min, self-contained)
+npm test                      # e2e only: 173 functional checks
 npm run test:payments         # payment unit tests on an isolated database
-npm run verify:3d             # 22 real-browser WebGL checks
+npm run verify:2d             # 36 real-browser 2D interface checks
 npm run verify:links          # crawl: broken links / unwired buttons
 ```
 
@@ -115,6 +116,8 @@ WHATSAPP_*                    # WhatsApp delivery
 - Seeding is always in-place truncation. Never delete `data/rentlink.db` while a
   server is running — WAL keeps the old inode open and the two processes stop seeing
   the same database.
-- The 3D models are procedural meshes built from primitives (genuinely interactive,
-  but not manufacturer CAD), lazily mounted, DPR-capped, with a photo fallback when
-  WebGL is unavailable.
+- Listing images: a provider's uploaded photo is always shown first. Seeded demo
+  listings fall back to category photography via `src/lib/photos.ts` — the stored
+  `/img/*.svg` placeholders are never rendered as if they were photographs.
+- The interface is 2D only. `model_3d` remains a column on `resources` for API and
+  record compatibility, but no page offers, renders or advertises a 3D model.

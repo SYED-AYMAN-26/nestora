@@ -2,6 +2,7 @@ import Link from "next/link";
 import { all, Row } from "@/lib/db";
 import { Badge, Card, EmptyState, PageHeader, money } from "@/components/ui";
 import { categoryName } from "@/lib/constants";
+import { listingPhoto } from "@/lib/photos";
 import { AdminResourceActions } from "./AdminResourceActions";
 import { fmtDateTime } from "@/lib/format";
 
@@ -60,7 +61,7 @@ export default async function AdminResources({ searchParams }: { searchParams: P
             <Card key={r.id} className="p-3.5">
               <div className="flex flex-wrap items-start gap-3">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={r.image_url || "/img/camera.svg"} alt="" className="h-14 w-20 rounded-lg object-cover" />
+                <img src={listingPhoto(r.image_url, r.category)} alt="" width={1408} height={768} loading="lazy" className="h-14 w-20 rounded-lg object-cover" />
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
                     <Link href={`/resources/${r.id}`} className="text-[13px] font-semibold text-ink hover:text-electric">{r.title}</Link>

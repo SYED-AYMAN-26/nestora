@@ -95,13 +95,13 @@ const FEATURES: { area: string; items: { name: string; status: Status; note: str
     ],
   },
   {
-    area: "3D & interface",
+    area: "Interface (2D)",
     items: [
-      { name: "Landing-page 3D hero", status: "working", note: "Lazy-mounted three.js scene, procedural equipment models.", link: "/" },
-      { name: "Interactive equipment viewer", status: "working", note: "Orbit/zoom with pointer or keyboard, contact shadows, auto-rotate toggle.", link: "/viewer" },
-      { name: "Procedural (not CAD) models", status: "demo", note: "14 model types built from primitives; honestly labelled as stylised, not manufacturer-accurate." },
-      { name: "2D fallback & reduced motion", status: "working", note: "WebGL probe, photo fallback, prefers-reduced-motion stops auto-rotation." },
-      { name: "Responsive layout", status: "working", note: "Mobile-first grids, collapsible filters, scrollable tables." },
+      { name: "Landing page", status: "working", note: "Photographic hero, discovery search, gallery, categories, featured listings, verified providers, how-it-works, trust and impact sections.", link: "/" },
+      { name: "Equipment showcase", status: "working", note: "Former WebGL viewer route, now a 2D photographic showcase of live listings with booking links.", link: "/viewer" },
+      { name: "Photo galleries", status: "working", note: "Listing galleries with thumbnail switching; uploaded photos shown first, category photography otherwise." },
+      { name: "Light theme & accessibility", status: "working", note: "White surfaces with navy/teal accents, AA text contrast, visible focus rings, prefers-reduced-motion honoured." },
+      { name: "Responsive layout", status: "working", note: "Mobile-first grids, collapsible filters, scrollable tables — swept at 390px by scripts/check-2d.mjs." },
     ],
   },
 ];
@@ -220,7 +220,7 @@ export default async function VerificationReportPage() {
           <li>• No automated KYC — verification is a human admin decision.</li>
           <li>• No automatic dispute adjudication — decisions require admin review.</li>
           <li>• No CO₂ / waste-prevented claims; the data needed isn&apos;t collected.</li>
-          <li>• No claim that a 2D photo is a 3D model, or that a seeded provider is real.</li>
+          <li>• No claim that a seeded provider is real, and no 3D/WebGL feature is claimed — the product is 2D only.</li>
         </ul>
       </Card>
 

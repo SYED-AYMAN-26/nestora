@@ -204,7 +204,7 @@ async function main() {
     console.log(`  ${ok ? "\x1b[32mPASS\x1b[0m" : "\x1b[31mFAIL\x1b[0m"} ${res.status} /api/recommend (POST)`);
   });
 
-  await section("Ajax endpoints used by the 3D viewer / booking panel", async () => {
+  await section("Ajax endpoints used by the listing page / booking panel", async () => {
     for (const p of [
       "/api/resources/1/availability?start=2030-01-01&end=2030-01-05&units=1&basis=daily&months=2",
       "/api/providers/anna-institute-of-technology",

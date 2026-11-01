@@ -102,7 +102,7 @@ export default async function MarketplacePage({ searchParams }: { searchParams: 
             <EmptyState
               title="No resources match those filters"
               body="Try widening your search: clear the price ceiling, remove the availability window, or search by capability instead of an exact product name."
-              action={<Link href="/marketplace" className="rounded-lg bg-electric px-3.5 py-2 text-[13px] font-medium text-navy-950">Reset filters</Link>}
+              action={<Link href="/marketplace" className="rounded-lg bg-electric px-3.5 py-2 text-[13px] font-medium text-white">Reset filters</Link>}
             />
           ) : (
             <div className="grid gap-3.5 sm:grid-cols-2 xl:grid-cols-3">

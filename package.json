@@ -12,7 +12,7 @@
     "typecheck": "tsc --noEmit",
     "test": "node scripts/test-e2e.mjs",
     "test:payments": "node scripts/test-payments.mjs",
-    "verify:3d": "node scripts/check-3d.mjs",
+    "verify:2d": "node scripts/check-2d.mjs",
     "verify:links": "node scripts/check-links.mjs",
     "db:reset": "node scripts/seed.mjs --reset",
     "db:seed": "node scripts/seed.mjs",
@@ -31,15 +31,12 @@
     "sweep:pages": "node scripts/sweep-pages.mjs"
   },
   "dependencies": {
-    "@react-three/drei": "^10.7.9",
-    "@react-three/fiber": "^9.8.2",
     "@vercel/blob": "^2.8.2",
     "better-sqlite3": "11.10.0",
     "next": "^15.5.7",
     "pg": "^8.16.3",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
-    "three": "^0.187.0",
     "zod": "^4.6.7"
   },
   "devDependencies": {
@@ -49,7 +46,6 @@
     "@types/pg": "^8.23.1",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
-    "@types/three": "^0.186.0",
     "@typescript-eslint/eslint-plugin": "^8.72.1",
     "@typescript-eslint/parser": "^8.72.1",
     "esbuild-register": "^3.6.0",

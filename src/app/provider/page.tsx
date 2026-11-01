@@ -111,7 +111,7 @@ export default async function ProviderHome() {
               <Link href="/provider/utilisation" className="text-[12px] text-electric hover:underline">Details →</Link>
             </div>
             {listings.length === 0 ? (
-              <EmptyState title="No listings yet" body="Add your first resource to see utilisation insights." action={<Link href="/provider/new" className="rounded-lg bg-electric px-3 py-1.5 text-[12px] font-medium text-navy-950">Create listing</Link>} />
+              <EmptyState title="No listings yet" body="Add your first resource to see utilisation insights." action={<Link href="/provider/new" className="rounded-lg bg-electric px-3 py-1.5 text-[12px] font-medium text-white">Create listing</Link>} />
             ) : (
               <>
                 <p className="mb-2 text-[11.5px] leading-relaxed text-ink-faint">
@@ -209,7 +209,7 @@ export default async function ProviderHome() {
             <p className="text-[11.5px] leading-relaxed text-ink-faint">
               Buyers see exactly why they ranked where they did. Adjust these rules in settings.
             </p>
-            <pre className="mt-1.5 overflow-x-auto rounded-lg bg-navy-950/70 p-2 text-[10.5px] text-ink-dim">
+            <pre className="mt-1.5 overflow-x-auto rounded-lg bg-navy-850 p-2 text-[10.5px] text-ink-dim">
 {JSON.stringify((() => { try { return JSON.parse(p.priority_policy || "{}"); } catch { return {}; } })(), null, 2)}
             </pre>
             <Link href="/settings" className="mt-1.5 inline-block text-[11.5px] text-electric hover:underline">Edit policy →</Link>

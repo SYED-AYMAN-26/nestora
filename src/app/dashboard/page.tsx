@@ -5,6 +5,7 @@ import { all, one, Row } from "@/lib/db";
 import { Badge, Card, EmptyState, InfoNote, PageHeader, Stat, StatusTone, statusTone, money } from "@/components/ui";
 import { BOOKING_STATUS_LABEL } from "@/lib/constants";
 import { fmtDate } from "@/lib/format";
+import { listingPhoto } from "@/lib/photos";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Buyer dashboard" };
@@ -14,7 +15,7 @@ export default async function BuyerDashboard() {
   if (!user) redirect("/login?next=/dashboard");
 
   const bookings = await all<Row>(
-    `SELECT b.*, r.title AS resource_title, p.display_name AS provider_name,
+    `SELECT b.*, r.title AS resource_title, r.category AS resource_category, p.display_name AS provider_name,
             (SELECT url FROM resource_images i WHERE i.resource_id = r.id ORDER BY sort_order LIMIT 1) AS image_url
        FROM bookings b JOIN resources r ON r.id = b.resource_id JOIN provider_profiles p ON p.id = b.provider_id
       WHERE b.buyer_id = ? ORDER BY b.created_at DESC`,
@@ -26,13 +27,13 @@ export default async function BuyerDashboard() {
   const dueSoon = bookings.filter((b) => b.status === "active");
 
   const favourites = await all<Row>(
-    `SELECT r.id, r.title, r.price_daily, p.display_name AS provider_name,
+    `SELECT r.id, r.title, r.category, r.price_daily, p.display_name AS provider_name,
             (SELECT url FROM resource_images i WHERE i.resource_id = r.id ORDER BY sort_order LIMIT 1) AS image_url
        FROM favourites f JOIN resources r ON r.id = f.resource_id JOIN provider_profiles p ON p.id = r.provider_id
       WHERE f.user_id = ? ORDER BY f.created_at DESC LIMIT 6`, user.id
   );
   const recent = await all<Row>(
-    `SELECT r.id, r.title, r.price_daily, p.display_name AS provider_name, rv.viewed_at,
+    `SELECT r.id, r.title, r.category, r.price_daily, p.display_name AS provider_name, rv.viewed_at,
             (SELECT url FROM resource_images i WHERE i.resource_id = r.id ORDER BY sort_order LIMIT 1) AS image_url
        FROM recently_viewed rv JOIN resources r ON r.id = rv.resource_id JOIN provider_profiles p ON p.id = r.provider_id
       WHERE rv.user_id = ? ORDER BY rv.viewed_at DESC LIMIT 6`, user.id
@@ -57,7 +58,7 @@ export default async function BuyerDashboard() {
         sub="Everything on the buying side: pending requests, active rentals, return deadlines, favourites and payments."
         right={
           <>
-            <Link href="/marketplace" className="rounded-lg bg-gradient-to-b from-electric to-electric-deep px-3.5 py-2 text-[13px] font-semibold text-navy-950">Browse marketplace</Link>
+            <Link href="/marketplace" className="rounded-lg bg-gradient-to-b from-electric to-electric-deep px-3.5 py-2 text-[13px] font-semibold text-white">Browse marketplace</Link>
             {!user.provider && <Link href="/onboarding" className="rounded-lg border border-white/16 px-3.5 py-2 text-[13px] text-ink">Become a provider</Link>}
           </>
         }
@@ -101,14 +102,14 @@ export default async function BuyerDashboard() {
               <Link href="/bookings" className="text-[12px] text-electric hover:underline">All bookings →</Link>
             </div>
             {bookings.length === 0 ? (
-              <EmptyState title="No bookings yet" body="Find something you need and send a request — the provider approves before any payment." action={<Link href="/recommend" className="rounded-lg bg-electric px-3 py-1.5 text-[12.5px] font-medium text-navy-950">Find by need</Link>} />
+              <EmptyState title="No bookings yet" body="Find something you need and send a request — the provider approves before any payment." action={<Link href="/recommend" className="rounded-lg bg-electric px-3 py-1.5 text-[12.5px] font-medium text-white">Find by need</Link>} />
             ) : (
               <ul className="space-y-2">
                 {bookings.slice(0, 6).map((b) => (
                   <li key={b.id}>
                     <Link href={`/bookings/${b.id}`} className="flex items-center gap-3 rounded-xl border border-white/8 bg-white/2 p-2.5 transition hover:border-electric/35">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={b.image_url || "/img/camera.svg"} alt="" className="h-12 w-16 rounded-lg object-cover" />
+                      <img src={listingPhoto(b.image_url, b.resource_category)} alt="" width={1408} height={768} loading="lazy" className="h-12 w-16 rounded-lg object-cover" />
                       <div className="min-w-0 flex-1">
                         <p className="truncate text-[12.5px] font-medium text-ink">{b.resource_title}</p>
                         <p className="truncate text-[11px] text-ink-faint">{b.provider_name} · {fmtDate(b.start_date)} → {fmtDate(b.end_date)}</p>
@@ -155,7 +156,7 @@ export default async function BuyerDashboard() {
                   <li key={f.id}>
                     <Link href={`/resources/${f.id}`} className="flex items-center gap-2 rounded-lg px-1.5 py-1.5 hover:bg-white/4">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={f.image_url || "/img/camera.svg"} alt="" className="h-9 w-12 rounded object-cover" />
+                      <img src={listingPhoto(f.image_url, f.category)} alt="" width={1408} height={768} loading="lazy" className="h-9 w-12 rounded object-cover" />
                       <span className="min-w-0 flex-1 truncate text-[12px] text-ink">{f.title}</span>
                       <span className="text-[11.5px] text-ink-faint">{money(f.price_daily)}</span>
                     </Link>

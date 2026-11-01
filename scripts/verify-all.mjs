@@ -12,7 +12,9 @@
  *   4. Payment unit tests    scripts/test-payments.mjs            (isolated DB)
  *   5. Payment integration   scripts/test-payments-integration.mjs (own server :3100)
  *   6. End-to-end tests      scripts/test-e2e.mjs                (server :3000)
- *   7. 3D browser tests      scripts/check-3d.mjs                (puppeteer + WebGL)
+ *   7. 2D browser tests      scripts/check-2d.mjs                (puppeteer + DOM)
+ *
+ *   BASE=http://127.0.0.1:3300 npm run verify:full   # target an app you started
  *   8. Link / button checks  scripts/check-links.mjs
  *
  * Nothing here is mocked away and no assertion is relaxed to make a gate pass.
@@ -24,6 +26,29 @@ import fs from "node:fs";
 
 const FAST = process.argv.includes("--fast");
 const CHROME_LIBS = "/home/user/.local/chromedeps/usr/lib/x86_64-linux-gnu";
+// Where the browser suites and the "already running server" probes point.
+// Set BASE to target a server you started yourself (e.g. BASE=http://127.0.0.1:3300).
+const BASE = process.env.BASE || "http://127.0.0.1:3000";
+const BASE_PORT = new URL(BASE).port || "80";
+
+/**
+ * Environment for a `next start` this harness boots itself.
+ *
+ * A production build now refuses to start without a session secret, and refuses
+ * the documented demo password when demo seeding is on (both are deliberate
+ * safety rules). The harness is a local, disposable, obviously-insecure run, so
+ * it supplies a throwaway secret, its own demo password and explicitly
+ * acknowledges the insecure configuration.
+ */
+const LOCAL_SERVER_ENV = {
+  NODE_ENV: "production",
+  RENTLINK_ALLOW_INSECURE_PROD: "1",
+  ALLOW_TEST_FIXTURES: "1",
+  ALLOW_DEMO_SEED: "1",
+  DEMO_PASSWORD: "Verifier@1234",
+  SESSION_SECRET: "verify-all-harness-session-secret-0123456789",
+  CRON_SECRET: "cron-test-secret-0123456789abcdef",
+};
 const results = [];
 
 function banner(n, total, name) {
@@ -145,12 +170,12 @@ banner(++n, TOTAL, "Payment integration tests (own server on :3100)");
   // Needs the demo server on :3000 for the "no gateway configured" checks.
   const demoUp = await (async () => {
     try {
-      const r = await fetch("http://127.0.0.1:3000/api/payments");
+      const r = await fetch(`${BASE}/api/payments`);
       return (await r.json()).mode === "demo";
     } catch { return false; }
   })();
 
-  const runIntegration = () => run("node", ["scripts/test-payments-integration.mjs"]);
+  const runIntegration = () => run("node", ["scripts/test-payments-integration.mjs"], { env: { DEMO_BASE: BASE } });
 
   let r;
   if (demoUp) {
@@ -159,9 +184,8 @@ banner(++n, TOTAL, "Payment integration tests (own server on :3100)");
     // Boot a demo-mode server ourselves, exactly as `npm run start:demo` would.
     fs.rmSync(".paytest/e2e.db", { force: true });
     run("node", ["scripts/seed.mjs", "--reset"], { env: { DATABASE_PATH: ".paytest/e2e.db", ALLOW_DEMO_SEED: "1" } });
-    r = await withServer("demo server", 3000, {
-      NODE_ENV: "production", DATABASE_PATH: ".paytest/e2e.db",
-      ALLOW_TEST_FIXTURES: "1", ALLOW_DEMO_SEED: "1",
+    r = await withServer("demo server", Number(BASE_PORT), {
+      ...LOCAL_SERVER_ENV, DATABASE_PATH: ".paytest/e2e.db",
     }, runIntegration);
   }
   const summary = summarise(r.out, /(?:Payment tests|Payment integration): \d+ passed, \d+ failed \(\d+ checks\)/);
@@ -177,18 +201,17 @@ if (FAST) finish();
 banner(++n, TOTAL, "End-to-end lifecycle tests");
 {
   const needsOwnServer = !(await (async () => {
-    try { return (await fetch("http://127.0.0.1:3000/")).status === 200; } catch { return false; }
+    try { return (await fetch(`${BASE}/`)).status === 200; } catch { return false; }
   })());
 
-  const runE2E = () => run("node", ["scripts/test-e2e.mjs"]);
+  const runE2E = () => run("node", ["scripts/test-e2e.mjs"], { env: { BASE } });
   let r;
   if (needsOwnServer) {
     fs.rmSync(".paytest/e2e.db", { force: true });
     run("node", ["scripts/seed.mjs", "--reset"], { env: { DATABASE_PATH: ".paytest/e2e.db", ALLOW_DEMO_SEED: "1" } });
-    console.log("\x1b[90m(no server on :3000 — starting one on a disposable database)\x1b[0m");
-    r = await withServer("e2e server", 3000, {
-      NODE_ENV: "production", DATABASE_PATH: ".paytest/e2e.db",
-      ALLOW_TEST_FIXTURES: "1", ALLOW_DEMO_SEED: "1",
+    console.log(`\x1b[90m(no server on :${BASE_PORT} — starting one on a disposable database)\x1b[0m`);
+    r = await withServer("e2e server", Number(BASE_PORT), {
+      ...LOCAL_SERVER_ENV, DATABASE_PATH: ".paytest/e2e.db",
     }, runE2E);
   } else {
     // A running server keeps its own rate-limit counters; a fresh seed is required
@@ -201,13 +224,13 @@ banner(++n, TOTAL, "End-to-end lifecycle tests");
   if (r.code !== 0) console.log(r.out.split("\n").filter((l) => /FAIL/.test(l)).slice(0, 20).join("\n"));
 }
 
-/* ------------------------------------------------------------ 7. 3D browser */
-banner(++n, TOTAL, "3D browser checks (puppeteer + real WebGL)");
+/* ------------------------------------------------------------ 7. 2D browser */
+banner(++n, TOTAL, "2D browser checks (puppeteer + DOM)");
 {
   const env = fs.existsSync(CHROME_LIBS) ? { LD_LIBRARY_PATH: CHROME_LIBS } : {};
-  const r = run("node", ["scripts/check-3d.mjs"], { env });
-  const summary = summarise(r.out, /3D summary\s+\d+\/\d+ passed, \d+ failed/);
-  record("3D checks", r.code === 0, summary || r.out.slice(-1200));
+  const r = run("node", ["scripts/check-2d.mjs", BASE], { env });
+  const summary = summarise(r.out, /2D summary\s+\d+\/\d+ passed, \d+ failed/);
+  record("2D checks", r.code === 0, summary || r.out.slice(-1200));
   if (r.code !== 0) console.log(r.out.split("\n").filter((l) => /FAIL/.test(l)).slice(0, 20).join("\n"));
 }
 
@@ -215,7 +238,7 @@ banner(++n, TOTAL, "3D browser checks (puppeteer + real WebGL)");
 banner(++n, TOTAL, "Link and button checks");
 {
   const env = fs.existsSync(CHROME_LIBS) ? { LD_LIBRARY_PATH: CHROME_LIBS } : {};
-  const r = run("node", ["scripts/check-links.mjs"], { env });
+  const r = run("node", ["scripts/check-links.mjs", BASE], { env });
   const summary = summarise(r.out, /Link\/UI summary\s+\d+\/\d+ passed/);
   record("Links & buttons", r.code === 0, summary || r.out.slice(-1200));
   if (r.code !== 0) console.log(r.out.split("\n").filter((l) => /FAIL/.test(l)).slice(0, 20).join("\n"));

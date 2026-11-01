@@ -2,6 +2,7 @@ import Link from "next/link";
 import { all, jsonParse, Row } from "@/lib/db";
 import { Badge, Card, EmptyState, PageHeader, Stars, VerifiedBadge, money } from "@/components/ui";
 import { CAPABILITIES, CONDITIONS, categoryName } from "@/lib/constants";
+import { listingPhoto } from "@/lib/photos";
 import { checkAvailability } from "@/lib/booking";
 
 export const dynamic = "force-dynamic";
@@ -80,7 +81,7 @@ export default async function ComparePage({ searchParams }: { searchParams: Prom
     ) },
     { label: "Cancellation", get: (r) => <span className="text-[11px] text-ink-faint">{r.cancellation_policy || r.provider_cancellation || "—"}</span> },
     { label: "Action", get: (r) => (
-      <Link href={`/resources/${r.id}`} className="rounded-lg bg-gradient-to-b from-electric to-electric-deep px-2.5 py-1.5 text-[11.5px] font-semibold text-navy-950">
+      <Link href={`/resources/${r.id}`} className="rounded-lg bg-gradient-to-b from-electric to-electric-deep px-2.5 py-1.5 text-[11.5px] font-semibold text-white">
         View &amp; book
       </Link>
     ) },
@@ -118,7 +119,7 @@ export default async function ComparePage({ searchParams }: { searchParams: Prom
                   {rows.map((r) => (
                     <th key={r.id} className="min-w-[190px] border-l border-white/8 p-3 align-top">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={r.image_url || "/img/camera.svg"} alt="" className="mb-2 h-24 w-full rounded-lg object-cover" />
+                      <img src={listingPhoto(r.image_url, r.category)} alt="" width={1408} height={768} loading="lazy" className="mb-2 h-24 w-full rounded-lg object-cover" />
                       <Link href={`/resources/${r.id}`} className="block text-[12.5px] font-semibold leading-snug text-ink hover:text-electric">{r.title}</Link>
                     </th>
                   ))}

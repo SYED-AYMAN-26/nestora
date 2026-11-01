@@ -10,7 +10,7 @@ export default function NotFound() {
         &ldquo;doesn&apos;t exist&rdquo; and &ldquo;not yours&rdquo; so private records aren&apos;t discoverable.
       </p>
       <div className="mt-5 flex flex-wrap justify-center gap-2">
-        <Link href="/marketplace" className="rounded-lg bg-gradient-to-b from-electric to-electric-deep px-3.5 py-2 text-[13px] font-semibold text-navy-950">Marketplace</Link>
+        <Link href="/marketplace" className="rounded-lg bg-gradient-to-b from-electric to-electric-deep px-3.5 py-2 text-[13px] font-semibold text-white">Marketplace</Link>
         <Link href="/" className="rounded-lg border border-white/16 px-3.5 py-2 text-[13px] text-ink">Home</Link>
         <Link href="/help" className="rounded-lg border border-white/16 px-3.5 py-2 text-[13px] text-ink">Help</Link>
       </div>

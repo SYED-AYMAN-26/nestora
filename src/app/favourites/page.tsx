@@ -25,7 +25,7 @@ export default async function FavouritesPage() {
     <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
       <PageHeader title="Favourites" sub="Resources you've saved for later. Availability is re-checked when you open a listing." />
       {items.length === 0 ? (
-        <EmptyState title="No favourites yet" body="Tap the heart on any listing to save it here." action={<Link href="/marketplace" className="rounded-lg bg-electric px-3 py-1.5 text-[12.5px] font-medium text-navy-950">Browse marketplace</Link>} />
+        <EmptyState title="No favourites yet" body="Tap the heart on any listing to save it here." action={<Link href="/marketplace" className="rounded-lg bg-electric px-3 py-1.5 text-[12.5px] font-medium text-white">Browse marketplace</Link>} />
       ) : (
         <div className="grid gap-3.5 sm:grid-cols-2 xl:grid-cols-3">
           {items.map((r) => <ResourceCard key={r.id} r={r} showCompare compareHref={`/compare?ids=${r.id}`} />)}

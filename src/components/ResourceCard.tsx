@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Badge, DemoTag, Stars, VerifiedBadge, money } from "./ui";
+import { listingPhoto, listingPhotoAlt } from "@/lib/photos";
 
 export type CardResource = {
   id: number;
@@ -31,30 +32,34 @@ export function ResourceCard({ r, compareHref, showCompare = false }: { r: CardR
       <Link href={`/resources/${r.id}`} className="relative block aspect-[16/10] overflow-hidden">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src={r.image_url || "/img/camera.svg"}
-          alt={r.title}
+          src={listingPhoto(r.image_url, r.category)}
+          alt={listingPhotoAlt(r.title, r.image_url)}
+          width={1408}
+          height={768}
           loading="lazy"
+          decoding="async"
           className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.045]"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-navy-950/85 via-navy-950/10 to-transparent" />
+        {/* light scrim so price/condition chips stay legible over a photograph */}
+        <div className="absolute inset-x-0 bottom-0 h-2/5 bg-gradient-to-t from-[#0b1622]/55 to-transparent" />
         <div className="absolute left-2.5 top-2.5 flex flex-wrap gap-1.5">
           {r.is_demo ? <DemoTag /> : null}
           {r.verification_status === "verified" && (
-            <span className="inline-flex items-center gap-1 rounded-md border border-emerald-400/40 bg-emerald-500/20 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-emerald-200 backdrop-blur">
+            <span className="inline-flex items-center gap-1 rounded-md bg-white/95 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-emerald-700 shadow-sm ring-1 ring-emerald-500/30">
               ✓ Verified
             </span>
           )}
           {r.verification_status === "pending" && (
-            <span className="rounded-md border border-amber-400/40 bg-amber-500/20 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-amber-200 backdrop-blur">
+            <span className="rounded-md bg-white/95 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-amber-700 shadow-sm ring-1 ring-amber-500/30">
               Pending
             </span>
           )}
         </div>
         <div className="absolute inset-x-2.5 bottom-2.5 flex items-end justify-between gap-2">
-          <span className="rounded-md border border-white/12 bg-navy-950/70 px-2 py-0.5 text-[11px] text-ink-dim backdrop-blur">
+          <span className="rounded-md bg-white/95 px-2 py-0.5 text-[11px] font-medium text-ink-dim shadow-sm">
             {CONDITION_LABEL[r.condition] ?? r.condition}
           </span>
-          <span className="rounded-md border border-electric/30 bg-navy-950/80 px-2 py-1 text-right backdrop-blur">
+          <span className="rounded-md bg-white px-2 py-1 text-right shadow-sm">
             <span className="text-sm font-semibold text-ink">{money(r.price_daily || r.price_hourly * 8)}</span>
             <span className="text-[10px] text-ink-faint">/{r.price_daily ? "day" : "8h"}</span>
           </span>
@@ -102,7 +107,15 @@ export function ResourceRow({ r }: { r: CardResource & { status?: string } }) {
   return (
     <Link href={`/resources/${r.id}`} className="glass flex items-center gap-3 rounded-xl p-2.5 transition hover:border-electric/35">
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={r.image_url || "/img/camera.svg"} alt="" className="h-14 w-20 shrink-0 rounded-lg object-cover" loading="lazy" />
+      <img
+        src={listingPhoto(r.image_url, r.category)}
+        alt=""
+        width={1408}
+        height={768}
+        className="h-14 w-20 shrink-0 rounded-lg object-cover"
+        loading="lazy"
+        decoding="async"
+      />
       <div className="min-w-0 flex-1">
         <p className="truncate text-[13px] font-medium text-ink">{r.title}</p>
         <p className="truncate text-[11.5px] text-ink-faint">
@@ -120,9 +133,9 @@ export function ResourceRow({ r }: { r: CardResource & { status?: string } }) {
 export function CompareBar({ items, onClear }: { items: { id: number; title: string }[]; onClear: () => void }) {
   if (!items.length) return null;
   return (
-    <div className="fixed inset-x-0 bottom-4 z-40 mx-auto flex w-fit items-center gap-3 rounded-full border border-electric/30 bg-navy-900/90 px-4 py-2 shadow-2xl backdrop-blur">
+    <div className="fixed inset-x-0 bottom-4 z-40 mx-auto flex w-fit items-center gap-3 rounded-full border border-electric/25 bg-white px-4 py-2 shadow-xl">
       <span className="text-[12px] text-ink-dim">{items.length} selected for comparison</span>
-      <Link href={`/compare?ids=${items.map((i) => i.id).join(",")}`} className="rounded-full bg-electric px-3 py-1 text-[12px] font-semibold text-navy-950">
+      <Link href={`/compare?ids=${items.map((i) => i.id).join(",")}`} className="rounded-full bg-electric px-3 py-1 text-[12px] font-semibold text-white">
         Compare
       </Link>
       <button type="button" onClick={onClear} className="text-[12px] text-ink-faint hover:text-ink">Clear</button>

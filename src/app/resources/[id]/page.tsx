@@ -56,7 +56,7 @@ export default async function ResourcePage({ params }: { params: Promise<{ id: s
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1.55fr)_minmax(0,1fr)]">
         <div>
-          <Gallery images={images} title={r.title} modelKey={r.model_3d} />
+          <Gallery images={images} title={r.title} category={r.category} />
 
           <div className="mt-5 flex flex-wrap items-start justify-between gap-3">
             <div>

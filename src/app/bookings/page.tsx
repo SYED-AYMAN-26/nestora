@@ -5,6 +5,7 @@ import { all, Row } from "@/lib/db";
 import { Badge, Card, EmptyState, PageHeader, statusTone } from "@/components/ui";
 import { BOOKING_STATUS_LABEL } from "@/lib/constants";
 import { fmtDate, money } from "@/lib/format";
+import { listingPhoto } from "@/lib/photos";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "My bookings" };
@@ -24,7 +25,7 @@ export default async function BookingsPage({ searchParams }: { searchParams: Pro
   const filter = sp.status || "all";
 
   const items = await all<Row>(
-    `SELECT b.*, r.title AS resource_title, p.display_name AS provider_name, p.storefront_slug,
+    `SELECT b.*, r.title AS resource_title, r.category, p.display_name AS provider_name, p.storefront_slug,
             (SELECT url FROM resource_images i WHERE i.resource_id = r.id ORDER BY sort_order LIMIT 1) AS image_url,
             (SELECT COUNT(*) FROM extensions e WHERE e.booking_id = b.id AND e.status = 'pending') AS pending_extensions
        FROM bookings b JOIN resources r ON r.id = b.resource_id JOIN provider_profiles p ON p.id = b.provider_id
@@ -39,7 +40,7 @@ export default async function BookingsPage({ searchParams }: { searchParams: Pro
       <PageHeader
         title="My bookings"
         sub="Every request you've made, with its current state in the rental lifecycle. Open a booking to pay, confirm collection, request an extension or submit a return."
-        right={<Link href="/marketplace" className="rounded-lg bg-gradient-to-b from-electric to-electric-deep px-3.5 py-2 text-[13px] font-semibold text-navy-950">Book something</Link>}
+        right={<Link href="/marketplace" className="rounded-lg bg-gradient-to-b from-electric to-electric-deep px-3.5 py-2 text-[13px] font-semibold text-white">Book something</Link>}
       />
 
       <div className="mb-5 flex flex-wrap gap-1.5">
@@ -57,14 +58,14 @@ export default async function BookingsPage({ searchParams }: { searchParams: Pro
       </div>
 
       {shown.length === 0 ? (
-        <EmptyState title="Nothing here" body="No bookings in this state." action={<Link href="/marketplace" className="rounded-lg bg-electric px-3 py-1.5 text-[12.5px] font-medium text-navy-950">Browse marketplace</Link>} />
+        <EmptyState title="Nothing here" body="No bookings in this state." action={<Link href="/marketplace" className="rounded-lg bg-electric px-3 py-1.5 text-[12.5px] font-medium text-white">Browse marketplace</Link>} />
       ) : (
         <div className="space-y-2.5">
           {shown.map((b) => (
             <Card key={b.id} className="p-3.5">
               <div className="flex flex-wrap items-start gap-3">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={b.image_url || "/img/camera.svg"} alt="" className="h-16 w-24 rounded-lg object-cover" />
+                <img src={listingPhoto(b.image_url, b.category)} alt="" width={1408} height={768} loading="lazy" className="h-16 w-24 rounded-lg object-cover" />
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
                     <Link href={`/bookings/${b.id}`} className="text-[14px] font-semibold text-ink hover:text-electric">{b.resource_title}</Link>

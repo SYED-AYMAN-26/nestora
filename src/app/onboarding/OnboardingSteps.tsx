@@ -135,7 +135,7 @@ export function OnboardingSteps({
             only after an admin approves your submission.
           </div>
           <div className="mt-4 flex flex-wrap gap-2">
-            <Link href="/provider/verification" className="rounded-lg bg-gradient-to-b from-electric to-electric-deep px-3.5 py-2 text-[13.5px] font-medium text-navy-950">
+            <Link href="/provider/verification" className="rounded-lg bg-gradient-to-b from-electric to-electric-deep px-3.5 py-2 text-[13.5px] font-medium text-white">
               Open verification
             </Link>
             <Button variant="ghost" onClick={() => setStep(3)}>Later</Button>

@@ -63,10 +63,10 @@ export function Toggle({ checked, onChange, label, hint }: { checked: boolean; o
 export function Alert({ kind = "error", children }: { kind?: "error" | "success" | "info" | "warn"; children: ReactNode }) {
   if (!children) return null;
   const styles = {
-    error: "border-rose-400/30 bg-rose-400/10 text-rose-200",
-    success: "border-emerald-400/30 bg-emerald-400/10 text-emerald-200",
-    info: "border-sky-400/30 bg-sky-400/10 text-sky-100",
-    warn: "border-amber-400/30 bg-amber-400/10 text-amber-100",
+    error: "border-rose-200 bg-rose-50 text-rose-800",
+    success: "border-emerald-200 bg-emerald-50 text-emerald-800",
+    info: "border-sky-200 bg-sky-50 text-sky-900",
+    warn: "border-amber-200 bg-amber-50 text-amber-900",
   }[kind];
   return <div role={kind === "error" ? "alert" : "status"} className={`mb-3 rounded-lg border px-3 py-2 text-[12.5px] leading-relaxed ${styles}`}>{children}</div>;
 }
@@ -76,11 +76,11 @@ export function Button({
 }: { children: ReactNode; variant?: "primary" | "outline" | "ghost" | "danger" | "success"; loading?: boolean } & React.ButtonHTMLAttributes<HTMLButtonElement>) {
   const base = "inline-flex items-center justify-center gap-2 rounded-lg px-3.5 py-2 text-[13.5px] font-medium transition disabled:cursor-not-allowed disabled:opacity-50";
   const v = {
-    primary: "bg-gradient-to-b from-electric to-electric-deep text-navy-950 shadow-[0_10px_28px_-14px_rgba(56,189,248,0.9)] hover:brightness-110",
-    outline: "border border-white/16 bg-white/4 text-ink hover:border-electric/45 hover:bg-white/8",
-    ghost: "text-ink-dim hover:bg-white/6 hover:text-ink",
-    danger: "border border-rose-400/35 bg-rose-400/12 text-rose-200 hover:bg-rose-400/20",
-    success: "border border-emerald-400/35 bg-emerald-400/12 text-emerald-200 hover:bg-emerald-400/20",
+    primary: "bg-electric text-white shadow-[0_8px_20px_-10px_rgba(15,118,110,0.75)] hover:bg-electric-deep",
+    outline: "border border-white/16 bg-white text-ink hover:border-electric/45 hover:bg-navy-850",
+    ghost: "text-ink-dim hover:bg-navy-850 hover:text-ink",
+    danger: "border border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100",
+    success: "border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100",
   }[variant];
   return (
     <button {...rest} disabled={rest.disabled || loading} className={`${base} ${v} ${className}`}>
@@ -122,17 +122,17 @@ export function Uploader({
       {hint && <p className="mb-1.5 text-[11px] text-ink-faint">{hint}</p>}
       <div className="flex flex-wrap gap-2">
         {value.map((url) => (
-          <div key={url} className="group relative h-20 w-24 overflow-hidden rounded-lg border border-white/12">
+          <div key={url} className="group relative h-20 w-24 overflow-hidden rounded-lg border border-white/14">
             {kind === "image" ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={url} alt="" className="h-full w-full object-cover" />
             ) : (
-              <div className="grid h-full place-items-center bg-navy-900 text-[10px] text-ink-dim">DOCUMENT</div>
+              <div className="grid h-full place-items-center bg-navy-850 text-[10px] text-ink-dim">DOCUMENT</div>
             )}
             <button
               type="button"
               onClick={() => onChange(value.filter((v) => v !== url))}
-              className="absolute right-0.5 top-0.5 rounded bg-navy-950/85 px-1.5 text-[11px] text-rose-300 opacity-0 transition group-hover:opacity-100"
+              className="absolute right-0.5 top-0.5 rounded bg-white/95 px-1.5 text-[11px] text-rose-300 opacity-0 shadow-sm transition group-hover:opacity-100"
               aria-label="Remove file"
             >
               ✕

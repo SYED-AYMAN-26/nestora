@@ -20,8 +20,6 @@ export type ListingDraft = {
   booking_limit_days: number; images: string[]; blocked_dates: string[];
 };
 
-const MODEL_KEYS = ["camera", "laptop", "projector", "robotics", "microphone", "printer", "chip", "drill", "drone", "flask", "room", "van"];
-
 export function ListingForm({ initial, mode }: { initial: ListingDraft; mode: "create" | "edit" }) {
   const router = useRouter();
   const [f, setF] = useState<ListingDraft>(initial);
@@ -95,15 +93,9 @@ export function ListingForm({ initial, mode }: { initial: ListingDraft; mode: "c
           <Textarea id="description" rows={5} value={f.description} onChange={(e) => set("description", e.target.value)} />
         </Field>
         <Uploader value={f.images} onChange={(v) => set("images", v)} label="Photos" max={6} hint="Real photos of the actual item build trust. JPEG/PNG/WebP up to 5 MB." />
-        <div className="grid gap-3 sm:grid-cols-2">
-          <Field label="3D model (optional)" htmlFor="model_3d" hint="Adds an interactive procedural 3D viewer to your listing.">
-            <Select id="model_3d" value={f.model_3d ?? ""} onChange={(e) => set("model_3d", e.target.value || null)}>
-              <option value="">No 3D model (photo only)</option>
-              {MODEL_KEYS.map((m) => <option key={m} value={m}>{m}</option>)}
-            </Select>
-          </Field>
-          <Field label="Best for" htmlFor="best_for"><Input id="best_for" value={f.best_for ?? ""} onChange={(e) => set("best_for", e.target.value)} placeholder="Events, student films, product shots" /></Field>
-        </div>
+        <Field label="Best for" htmlFor="best_for" hint="One line buyers see on the card, e.g. &quot;Events, student films, product shots&quot;.">
+          <Input id="best_for" value={f.best_for ?? ""} onChange={(e) => set("best_for", e.target.value)} placeholder="Events, student films, product shots" />
+        </Field>
       </section>
 
       <section className={section}>

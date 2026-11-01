@@ -36,7 +36,7 @@ export default async function DisputesPage() {
         <EmptyState
           title="No disputes"
           body="If something goes wrong with a rental, open a dispute from the booking page. Evidence (photos or documents) is required."
-          action={<Link href="/bookings" className="rounded-lg bg-electric px-3 py-1.5 text-[12.5px] font-medium text-navy-950">Go to my bookings</Link>}
+          action={<Link href="/bookings" className="rounded-lg bg-electric px-3 py-1.5 text-[12.5px] font-medium text-white">Go to my bookings</Link>}
         />
       ) : (
         <div className="space-y-2.5">

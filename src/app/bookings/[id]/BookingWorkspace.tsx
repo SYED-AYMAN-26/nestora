@@ -157,7 +157,7 @@ export function BookingWorkspace({
             page shows the gateway mode before you confirm.
           </p>
           <div className="mt-3 flex flex-wrap items-center gap-2">
-            <Link href={`/bookings/${booking.id}/payment`} className="rounded-lg bg-gradient-to-b from-electric to-electric-deep px-3.5 py-2 text-[13px] font-semibold text-navy-950">
+            <Link href={`/bookings/${booking.id}/payment`} className="rounded-lg bg-gradient-to-b from-electric to-electric-deep px-3.5 py-2 text-[13px] font-semibold text-white">
               Go to payment · {money(booking.total)}
             </Link>
             <Badge tone="warn">Not paid yet</Badge>

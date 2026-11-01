@@ -38,7 +38,7 @@ export default async function AdminUsers({ searchParams }: { searchParams: Promi
           <option value="user">Users</option>
           <option value="admin">Admins</option>
         </select>
-        <button type="submit" className="rounded-lg bg-gradient-to-b from-electric to-electric-deep px-3 py-1.5 text-[12.5px] font-semibold text-navy-950">Search</button>
+        <button type="submit" className="rounded-lg bg-gradient-to-b from-electric to-electric-deep px-3 py-1.5 text-[12.5px] font-semibold text-white">Search</button>
       </form>
 
       <Card className="overflow-x-auto p-0">

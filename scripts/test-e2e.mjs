@@ -739,17 +739,39 @@ async function checkSecurityExtras() {
 
 /* --------------------------------------------------------------- 12. 3D */
 async function check3D() {
-  section("12. 3D & responsive surface");
+  section("12. 2D interface & responsive surface");
+  // Replaces the former "3D & responsive surface" section. The product no longer
+  // ships three.js, so the same routes are asserted to render as 2D pages and to
+  // carry no WebGL surface at all.
   const viewer = await req("/viewer");
-  record(viewer.status === 200, "Dedicated 3D viewer page renders", `${viewer.text.length} bytes`);
-  const detail = await req(`/resources/${dbQuery(`SELECT id FROM resources WHERE model_3d IS NOT NULL LIMIT 1`)[0].id}`);
-  record(detail.status === 200, "Listing page with a 3D model renders", `${detail.text.length} bytes`);
-  const noModel = dbQuery(`SELECT id FROM resources WHERE model_3d IS NULL LIMIT 1`)[0];
-  if (noModel) {
-    const r = await req(`/resources/${noModel.id}`);
-    record(r.status === 200, "Listing without a model still renders (photo fallback)", `${r.text.length} bytes`);
+  record(viewer.status === 200, "Equipment showcase page (/viewer) renders", `${viewer.text.length} bytes`);
+  record(/<canvas/i.test(viewer.text) === false && /three\.js|webgl/i.test(viewer.text) === false,
+    "Showcase page contains no canvas and no WebGL/three.js reference");
+
+  const withPhoto = dbQuery(`SELECT id FROM resources WHERE status='active' ORDER BY id LIMIT 1`)[0];
+  const detail = await req(`/resources/${withPhoto.id}`);
+  record(detail.status === 200, "Listing detail page renders", `${detail.text.length} bytes`);
+  // Photos are resolved by category at the presentation layer, so every listing —
+  // including ones whose stored image is a vector placeholder — shows a JPEG.
+  record(/\/img\/photos\/[a-z-]+\.jpg/.test(detail.text), "Listing detail shows a photographic gallery image");
+  record(/<canvas/i.test(detail.text) === false, "Listing detail mounts no WebGL canvas");
+  record(/3d viewer|3d model|rotate and zoom/i.test(detail.text) === false, "Listing detail carries no 3D viewer copy");
+
+  // model_3d remains a database column (records and API compatibility are
+  // preserved); the UI simply no longer offers or renders a 3D model.
+  const withModel = dbQuery(`SELECT id FROM resources WHERE model_3d IS NOT NULL LIMIT 1`)[0];
+  if (withModel) {
+    const r = await req(`/resources/${withModel.id}`);
+    record(r.status === 200, "Listing that still stores a model_3d value renders normally (data preserved, 2D only)", `resource ${withModel.id}`);
+  } else {
+    record(true, "No listing currently stores a model_3d value", "column retained for API compatibility");
   }
-  record(/three|webgl/i.test(viewer.text), "Viewer page discloses the rendering technology / fallback");
+
+  const home = await req("/");
+  record(/<canvas/i.test(home.text) === false, "Homepage renders with no canvas");
+  record(/img\/photos\/hero\.jpg/.test(home.text), "Homepage renders the photographic hero");
+  record(/Browse marketplace/i.test(home.text) && /(Create account|List a resource)/i.test(home.text),
+    "Homepage CTAs present: browse marketplace + create account");
 }
 
 /* ------------------------------------------------------------------- run */

@@ -5,10 +5,11 @@ import Link from "next/link";
 import { api, money } from "@/lib/client";
 import { Alert, Button, Field, Input } from "@/components/form";
 import { Badge, Card, DemoTag, InfoNote, Stars, VerifiedBadge } from "@/components/ui";
+import { listingPhoto } from "@/lib/photos";
 
 type Rec = {
   resource: {
-    id: number; title: string; image_url: string | null; provider_name: string; location_city: string | null;
+    id: number; title: string; category?: string | null; image_url: string | null; provider_name: string; location_city: string | null;
     price_daily: number; is_demo: number | null; verification_status: string | null;
     rating_cached: number | null; rating_count: number | null;
   }; score: number; capabilityMatches: string[]; reasons: string[]; availabilityNote: string; available: boolean;
@@ -146,7 +147,7 @@ export function RecommendClient() {
               <Card key={r.resource.id} className="p-3.5">
                 <div className="flex gap-3">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={r.resource.image_url || "/img/camera.svg"} alt="" className="h-20 w-28 shrink-0 rounded-lg object-cover" />
+                  <img src={listingPhoto(r.resource.image_url, r.resource.category)} alt="" width={1408} height={768} loading="lazy" className="h-20 w-28 shrink-0 rounded-lg object-cover" />
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
                       <Link href={`/resources/${r.resource.id}`} className="text-[13.5px] font-semibold text-ink hover:text-electric">{r.resource.title}</Link>
@@ -169,7 +170,7 @@ export function RecommendClient() {
                 </ul>
                 <p className="mt-1.5 rounded-lg border border-emerald-400/25 bg-emerald-400/8 px-2 py-1 text-[11px] text-emerald-200">{r.availabilityNote}</p>
                 <div className="mt-2 flex gap-2">
-                  <Link href={`/resources/${r.resource.id}`} className="rounded-lg bg-gradient-to-b from-electric to-electric-deep px-2.5 py-1.5 text-[11.5px] font-semibold text-navy-950">View &amp; book</Link>
+                  <Link href={`/resources/${r.resource.id}`} className="rounded-lg bg-gradient-to-b from-electric to-electric-deep px-2.5 py-1.5 text-[11.5px] font-semibold text-white">View &amp; book</Link>
                   <Link href={`/compare?ids=${r.resource.id}`} className="rounded-lg border border-white/14 px-2.5 py-1.5 text-[11.5px] text-ink-dim hover:border-electric/40 hover:text-ink">Compare</Link>
                 </div>
               </Card>
